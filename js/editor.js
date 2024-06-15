@@ -11,12 +11,17 @@ class MMLEditor{
         this.logEditors = [null,null,null,null];
         this.lastEditNote = null
         this.playEditNoteFunc = null
+        this.enableEditPlay = false;
     }
     clear(){
         if(this.editor != null) return
         this.editor.setValue("");
     }
+    setEnableEditPlay(flag){
+        this.enableEditPlay = flag;
+    }
     editPlay(mml, playLine){
+        if(!this.enableEditPlay) return;
         if(this.playEditNoteFunc == null) return;
         this.playEditNoteFunc(mml, playLine);
     }

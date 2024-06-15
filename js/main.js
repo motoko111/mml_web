@@ -8,6 +8,8 @@ var mmlFilePath = null;
 
 var mmlEditor = new MMLEditor();
 
+var finishedInitAudio = false;
+
 function getEmitterCurrentPlayTime(){
   if(mmlEmitter == null || mmlEmitter.scheduler == null) return 0;
   return getEmitterCurrentTime() - WAIT_SEC;
@@ -121,82 +123,86 @@ function stop(){
 
 function play(mml) {
 
-  try{
-    var config = { context: audioContext };
-    mmlEmitter = new MMLEmitter(mml, config);
-    G_NoteAnalysis.analysis(mml, config);
-  
-    mmlEmitter.on("note", function(e) {
-      mmlEditor.soundLog(e.trackNumber, mtoco(e.noteNumber + e.key) + " ")
-      //console.log("NOTE: " + JSON.stringify(e));
-      playNoteTone(e);
-    });
-    mmlEmitter.on("end:all", function(e) {
-      //console.log("END : " + JSON.stringify(e));
-      mmlEmitter.stop();
-    });
-  
-    mmlEmitter.start();
-  
-    drawUpdate();
-  }catch(e){
-    return;
-  }
+  setupAudioAsync(() => {
+    try{
+      var config = { context: audioContext };
+      mmlEmitter = new MMLEmitter(mml, config);
+      G_NoteAnalysis.analysis(mml, config);
+    
+      mmlEmitter.on("note", function(e) {
+        mmlEditor.soundLog(e.trackNumber, mtoco(e.noteNumber + e.key) + " ")
+        //console.log("NOTE: " + JSON.stringify(e));
+        playNoteTone(e);
+      });
+      mmlEmitter.on("end:all", function(e) {
+        //console.log("END : " + JSON.stringify(e));
+        mmlEmitter.stop();
+      });
+    
+      mmlEmitter.start();
+    
+      drawUpdate();
+    }catch(e){
+      return;
+    }
+  });
 }
 
 // 一時的に鳴らす用
 function editPlay(mml, playLine){
 
-  try{
-    stopTracks(editTracks);
-
-    var config = { context: audioContext };
-    let lastNote = null;
-    let notMuteNotes = []
-    mmlEditEmitter = new MMLEmitter(mml, config);
-    mmlEditEmitter.on("note", function(e) {
-      if(!e.mute){
-        notMuteNotes.push(JSON.parse(JSON.stringify(e)))
-      }
-      lastNote = JSON.parse(JSON.stringify(e))
-    });
-    mmlEditEmitter.on("end:all", function(e) {
-      mmlEditEmitter.stop();
-      if(playLine){
-        G_NoteAnalysis.clear();
-        let firstPlaybackTime = -1;
-        let firstLength = -1;
-        notMuteNotes.forEach(note => {
-          if(firstPlaybackTime == -1){
-            firstPlaybackTime = note.playbackTime;
-            firstLength = note.currentLength;
-          }
-          note.mute = false;
-          let dt = (note.playbackTime - firstPlaybackTime);
-          note.playbackTime = Tone.context.currentTime + dt;
-          note.currentLength = note.currentLength - firstLength;
-          //console.log(note)
-          G_NoteAnalysis.add(firstPlaybackTime, JSON.parse(JSON.stringify(note)));
-          playEditNoteTone(note);
-        });
-      }
-      else{
-        if(lastNote != null){
-          lastNote.mute = false;
-          lastNote.playbackTime = Tone.context.currentTime;
-          lastNote.currentLength = 0;
-          //console.log(lastNote)
-          playEditNoteTone(lastNote);
-        }
-      }
-    });
+  setupAudioAsync(() => {
+    try{
+      stopTracks(editTracks);
   
-    mmlEditEmitter.start();
-    mmlEditEmitter.scheduler.demo(mmlEditEmitter._startTime, mmlEditEmitter._startTime + 60*10);
-    mmlEditEmitter = null
-  }catch(e){
-    return;
-  }
+      var config = { context: audioContext };
+      let lastNote = null;
+      let notMuteNotes = []
+      mmlEditEmitter = new MMLEmitter(mml, config);
+      mmlEditEmitter.on("note", function(e) {
+        if(!e.mute){
+          notMuteNotes.push(JSON.parse(JSON.stringify(e)))
+        }
+        lastNote = JSON.parse(JSON.stringify(e))
+      });
+      mmlEditEmitter.on("end:all", function(e) {
+        mmlEditEmitter.stop();
+        if(playLine){
+          G_NoteAnalysis.clear();
+          let firstPlaybackTime = -1;
+          let firstLength = -1;
+          notMuteNotes.forEach(note => {
+            if(firstPlaybackTime == -1){
+              firstPlaybackTime = note.playbackTime;
+              firstLength = note.currentLength;
+            }
+            note.mute = false;
+            let dt = (note.playbackTime - firstPlaybackTime);
+            note.playbackTime = Tone.context.currentTime + dt;
+            note.currentLength = note.currentLength - firstLength;
+            //console.log(note)
+            G_NoteAnalysis.add(firstPlaybackTime, JSON.parse(JSON.stringify(note)));
+            playEditNoteTone(note);
+          });
+        }
+        else{
+          if(lastNote != null){
+            lastNote.mute = false;
+            lastNote.playbackTime = Tone.context.currentTime;
+            lastNote.currentLength = 0;
+            //console.log(lastNote)
+            playEditNoteTone(lastNote);
+          }
+        }
+      });
+    
+      mmlEditEmitter.start();
+      mmlEditEmitter.scheduler.demo(mmlEditEmitter._startTime, mmlEditEmitter._startTime + 60*10);
+      mmlEditEmitter = null
+    }catch(e){
+      return;
+    }
+  });
 }
 
 var tracks = []
@@ -258,13 +264,33 @@ function waitForCondition(conditionFunction, interval = 1000) {
       }, interval);
   });
 }
-var autoPlay = async () => {
+
+// 初期化操作
+var setupAudioAsync = async (callback) => {
+
+  console.log("setupAudioAsync check");
+
+  if(finishedInitAudio) {
+    if(callback != null) callback();
+    return;
+  }
+
+  console.log("setupAudioAsync");
+
   await Tone.start(); // Tone.jsが使用できるようになるまで待機
   
   await createAudioBuffer();
   createNoiseBuffer(); // noise生成
+  
   tracks = createTrackSounds();
   editTracks = createTrackSounds();
+
+  finishedInitAudio = true;
+
+  if(callback != null) callback();
+}
+
+var autoPlay = async () => {
 
   await new Promise(resolve => setTimeout(resolve, 100))
 
@@ -272,13 +298,15 @@ var autoPlay = async () => {
   mmlEditor.setPlayEditNoteFunc(editPlay);
 
   if(!loadLocalStorage()){
-    await loadFileAsync('mml/test.mml', (txt) => {
+    await loadFileAsync('mml/template.mml', (txt) => {
       editor.insert(txt);
       console.log(txt);
     });
   }
 
   initDocument();
+
+  mmlEditor.setEnableEditPlay(true);
 
   // start();
 };
