@@ -12,6 +12,8 @@
 // @e[attack,decay,sustain,release] エンベロープ
 // @m1 @m0 ミュートON/OFF
 // @w[0～15,n] Waveチャンネルの場合、波形を変更
+// Ctri+L 1行再生
+// Ctrl+S セーブして全再生
 
 // Pulse
 t120 l8 o4 q90 v50 @0 @e[0,0.1,0.6,0.2] @m0

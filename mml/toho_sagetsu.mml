@@ -17,34 +17,42 @@
 // cde-fgab-
 // Pulse
 t128 l8 o5 q90 v50 @0 @e[0,0.1,0.6,0.2] @m0
-/:
 cdd+^^gfd+dfc^^
 dd+^^cf^^
 d+fd+fgg^^f16g16g^^
 c16d16d+^^
 gfd+fga+^^>c<d+^^cd^^
-cdd+fdd^^d16d+16c^^
-:/
+cdd+fdd^^d16d+16c^
+
+cdd+^^gfd+dfc^^
+dd+^^cf^^
+d+fd+fgg^^f16g16g^^
+c16d16d+^^
+gfd+fga+^^>c<d+^^cd^^
+cdd+fdd^^d16d+16c^
+
 o4
 g+a+>cd+
 f^d+fg^d+c<a+g>d+fc^
-cd+f^d+fg^
+cd+f^d+fg^a+>cd+dc<a+>c^
+<a+gf^gd+f^d+fg^fd+c^c<a+>
+c^c<a+>cdfga
 ;
 // Pluse
-t120 l8 o4 q90 v50 @0 @e[0,0.1,0.6,0.2] @m0
+t128 l8 o4 q90 v50 @0 @e[0,0.1,0.6,0.2] @m0
 
 ;
 // Wave
-t120 l8 o4 q90 v50 @0 @e[0,0.1,0.6,0.2] @m0 @w[3,2,3,4,5,6,7,8,9,10,11,12,13,14,13]
+t128 l8 o4 q90 v50 @0 @e[0,0.1,0.6,0.2] @m0 @w[3,2,3,4,5,6,7,8,9,10,11,12,13,14,13]
 
 ;
 // Noise
-t120 l8 o4 q90 v50 @1 @e[0,0.1,0.1,0.01] @m0
+t128 l8 o4 q90 v50 @1 @e[0,0.1,0.1,0.01] @m0
 
 ;
 // Sample
-t120 l8 o4 q90 v50 @1 @e[0,0.1,0.1,0.01] @m0
-
+t128 l8 o6 q90 v50 @3 @e[0,0.1,0.1,0.01] @m0
+/:crcrcrcrcrcr:/30
 ;
 
 

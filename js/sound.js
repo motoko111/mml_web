@@ -182,6 +182,8 @@ class TrackSoundPulse extends TrackSoundData
         info.osc.stop(t1 + WAIT_SEC);
 
         this.setStopPlayInfoTime(info, t1 + WAIT_SEC + 0.5);
+
+        console.log(e);
     }
 }
 
@@ -437,8 +439,8 @@ const createAudioBuffer = async () => {
     for(let i = 0; i < resources.length; ++i){
         const buffer = await setupSample(resources[i]);
         SourceBuffers.push(new Tone.Buffer(buffer));
-        console.log(SourceBuffers)
     }
+    console.log(SourceBuffers)
   };
 class TrackSoundSource extends TrackSoundData
 {

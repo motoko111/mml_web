@@ -1125,28 +1125,38 @@ var MMLIterator = (function () {
 
       var prev = null;
       var dotted = 0;
+      let calcLength = 0;
 
+      console.log("noteLength:" + noteLength);
       noteLength = noteLength.map(function (elem) {
         switch (elem) {
           case null:
+            console.log("elem = prev:" + elem + " " + prev);
             elem = prev;
             break;
           case 0:
+            console.log("elem = dotted *= 2:" + elem + " " + dotted);
             elem = dotted *= 2;
             break;
           default:
+            console.log("prev = dotted:" + prev + " " + dotted);
             prev = dotted = elem;
             break;
         }
 
         var length = elem !== null ? elem : _DefaultParams2["default"].length;
-        _this._lastNoteLength = length;
+        calcLength += (4 / length);
+        console.log("_calcDuration noteLength :" + length);
         return 60 / _this._tempo * (4 / length);
       });
 
-      return noteLength.reduce(function (a, b) {
+      let dt = noteLength.reduce(function (a, b) {
         return a + b;
       }, 0);
+
+      _this._lastNoteLength = calcLength;
+
+      return dt;
     }
   }, {
     key: "_calcNoteNumber",
@@ -1189,7 +1199,21 @@ var MMLIterator = (function () {
       this._currentLength = this._currentLength + (128 / length); // 少数を使わないように128分音符を基準の長さにする
 
       return arrayToIterator(noteNumbers.map(function (noteNumber) {
-        return { type: type, time: time, duration: duration, noteNumber: noteNumber, tempo: tempo, velocity: velocity, quantize: quantize, tone: tone, length:length, currentLength:currentLength, envelope:envelope, mute:mute, wave:wave, key:key};
+        return { type: type,
+          time: time,
+          duration: duration,
+          noteNumber: noteNumber,
+          tempo: tempo,
+          velocity: velocity,
+          quantize: quantize,
+          tone: tone,
+          length:length,
+          currentLength:currentLength,
+          envelope:envelope,
+          mute:mute,
+          wave:wave,
+          key:key
+          };
       }));
     }
   }, {

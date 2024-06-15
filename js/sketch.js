@@ -36,7 +36,8 @@ var HScroll = null;
 var VScroll = null;
 
 function setup() {
-  canvas = createCanvas(windowWidth, windowHeight * 0.5);
+  DRAW_NOTE_CANVAS_HEIGHT = windowHeight * 0.4;
+  canvas = createCanvas(windowWidth, windowHeight * 0.4);
   TRACK_COLORS = [
     color(0, 155, 255),
     color(255, 155, 0),
@@ -49,7 +50,6 @@ function setup() {
     color(255, 255, 255),
     color(255, 255, 255),
   ]
-  DRAW_NOTE_CANVAS_HEIGHT = windowHeight * 0.5;
 
   // gui setup
   var gui = new dat.GUI();
@@ -58,8 +58,8 @@ function setup() {
 
 //ウィンドウサイズが変更されたときに実行される関数
 function windowResized() {
-  DRAW_NOTE_CANVAS_HEIGHT = windowHeight * 0.5;
-  resizeCanvas(windowWidth, windowHeight * 0.5);
+  DRAW_NOTE_CANVAS_HEIGHT = windowHeight * 0.4;
+  resizeCanvas(windowWidth, windowHeight * 0.4);
 }
 
 function draw() {
@@ -134,9 +134,9 @@ function draw() {
         let duration = note.duration /* 音符の長さ */ * (note.quantize /* 音の長さ倍率 */ / 100);
         // 音が鳴っているか
         if(noteTime <= offsetTime && offsetTime <= noteTime + duration ) {
-          KeyboardStatus[note.noteNumber] = i
+          KeyboardStatus[note.noteNumber + note.key] = i
         }
-        let right = drawNote(note.trackNumber, offsetTime, noteTime , note.noteNumber, note.length, baseTime);
+        let right = drawNote(note.trackNumber, offsetTime, noteTime , note.noteNumber + note.key, note.length, baseTime);
         if(right >= windowWidth) break;
       }
     }
