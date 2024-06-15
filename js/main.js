@@ -299,7 +299,7 @@ var autoPlay = async () => {
 
   if(!loadLocalStorage()){
     await loadFileAsync('mml/template.mml', (txt) => {
-      editor.insert(txt);
+      mmlEditor.editor.setValue(txt, -1);
       console.log(txt);
     });
   }
