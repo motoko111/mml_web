@@ -1,0 +1,32 @@
+// t:テンポ
+// l:音の長さ4/4=4 
+// o:オクターブ
+// q:音の長さ 100
+// v:音の大きさ v/128
+// track分けるには;で区切る
+// []:和音 ※未対応
+// /::/N N回繰り返し
+// $ 無限繰り返し
+// @ 音色
+// @e[attack,decay,sustain,release] エンベロープ
+// @m1 @m0 ミュートON/OFF
+// @w[0～15,n] Waveチャンネルの場合、波形を変更
+
+t120 l8 o4 q90 v50 @0 @e[0,0.1,0.6,0.2] @m0
+c4d4e4f4e4d4c2
+e4f4g4a4g4f4e2
+c4r4c4r4c4r4c4r4
+ccddeefferdrc4
+;
+t120 l8 o3 q90 v50 @2 @e[0,0.1,0.6,0.2] @m1
+c4d4e4f4e4d4c2
+e4f4g4a4g4f4e2
+c4r4c4r4c4r4c4r4
+ccddeefferdrc4
+;
+t120 l8 o2 q90 v80 @2 @e[0.01,0.3,1.0,0.8] @m0 @w[10,10,4,4,5,6,7,8]
+c4d4e4f4e4d4c2
+e4f4g4a4g4f4e2
+c4r4c4r4c4r4c4r4
+ccddeefferdrc4
+;

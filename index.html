@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <script src="lib/Tone.js"></script>
+  <script src="lib/dat.gui.min.js"></script>
+  <script src="lib/p5.min.js"></script>
+  <!--<script src="lib/p5.sound.min.js"></script>-->
+  <script src="lib/ace/src/ace.js"></script>
+  <script src="js/mml-emitter.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/note_analysis.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/import_file.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/main.js"></script>
+</head>
+<body>
+  <article style="background-color:rgb(18, 16, 24)">
+    <!--p5.jsを使って描画するコンテンツ-->
+    <main></main>
+    <script src="js/sketch.js"></script>
+</article>
+<article style="background-color:rgb(255, 255, 255)">
+    <!--p5.jsを使わないコンテンツ-->
+    <button id="button" onclick="newFile();">new</button>
+    <button id="save" onclick="saveLocalStorage();restart();">save</button>
+    <button id="export" onclick="exportFile();">export</button>
+    <input type="file" id="fileInput"/>
+    <button id="button" onclick="start();">start</button>
+    <button id="button" onclick="stop();">stop</button>
+    track
+    0<input type="checkbox" id="track_enable_0" onclick="setVisibleTrack(0,this.checked);" checked />
+    1<input type="checkbox" id="track_enable_1" onclick="setVisibleTrack(1,this.checked);" checked />
+    2<input type="checkbox" id="track_enable_2" onclick="setVisibleTrack(2,this.checked);" checked />
+    3<input type="checkbox" id="track_enable_3" onclick="setVisibleTrack(3,this.checked);" checked />
+    4<input type="checkbox" id="track_enable_4" onclick="setVisibleTrack(4,this.checked);" checked />
+    5<input type="checkbox" id="track_enable_5" onclick="setVisibleTrack(5,this.checked);" checked />
+    6<input type="checkbox" id="track_enable_6" onclick="setVisibleTrack(6,this.checked);" checked />
+    7<input type="checkbox" id="track_enable_7" onclick="setVisibleTrack(7,this.checked);" checked />
+    8<input type="checkbox" id="track_enable_8" onclick="setVisibleTrack(8,this.checked);" checked />
+    9<input type="checkbox" id="track_enable_9" onclick="setVisibleTrack(9,this.checked);" checked />
+    <div id="output"></div>
+    <div>
+      <div id="editor" style="margin-top: 4px; float:left; width: 70%; height: 480px"></div>
+      <div id="logEditor_0" style="margin-top: 4px; float:left; width: 30%; height: 40px"></div>
+      <div id="logEditor_1" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
+      <div id="logEditor_2" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
+      <div id="logEditor_3" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
+      <div id="logEditor_4" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
+      <div id="logEditor_5" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
+      <div id="logEditor_6" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
+      <div id="logEditor_7" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
+      <div id="logEditor_8" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
+      <div id="logEditor_9" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
+    </div>
+    
+</article>
+
+  
+</body>
+</html>
