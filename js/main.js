@@ -280,6 +280,6 @@ var autoPlay = async () => {
 
   initDocument();
 
-  start();
+  // start();
 };
 autoPlay();
