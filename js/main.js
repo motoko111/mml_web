@@ -38,6 +38,10 @@ function restart(){
 }
 
 var newFile = async () => {
+  let result = window.confirm('新規作成\n現在編集中のデータは削除されます。よろしいですか？');
+  if(!result){
+    return;
+  }
 
   stop();
   mmlEditor.clear();
@@ -56,6 +60,18 @@ function saveLocalStorage(){
   localStorage.setItem("work.mml", content);
   drawUpdate();
   return true;
+}
+
+function deleteLocalStorage(){
+  let result = window.confirm('データ削除\nローカルストレージに保存されている作業データを削除します。よろしいですか？');
+  if(result){
+    mmlEditor.editor.setValue("");
+    localStorage.removeItem("work.mml");
+    drawUpdate();
+    return true;
+  }
+  else{
+  }
 }
 
 function loadLocalStorage(){

@@ -52,8 +52,8 @@ function setup() {
   ]
 
   // gui setup
-  var gui = new dat.GUI();
-  gui.addFolder("Tracks")
+  //var gui = new dat.GUI();
+  //gui.addFolder("Tracks")
 }
 
 //ウィンドウサイズが変更されたときに実行される関数
