@@ -1127,26 +1127,26 @@ var MMLIterator = (function () {
       var dotted = 0;
       let calcLength = 0;
 
-      console.log("noteLength:" + noteLength);
+      //console.log("noteLength:" + noteLength);
       noteLength = noteLength.map(function (elem) {
         switch (elem) {
           case null:
-            console.log("elem = prev:" + elem + " " + prev);
+            //console.log("elem = prev:" + elem + " " + prev);
             elem = prev;
             break;
           case 0:
-            console.log("elem = dotted *= 2:" + elem + " " + dotted);
+            //console.log("elem = dotted *= 2:" + elem + " " + dotted);
             elem = dotted *= 2;
             break;
           default:
-            console.log("prev = dotted:" + prev + " " + dotted);
+            //console.log("prev = dotted:" + prev + " " + dotted);
             prev = dotted = elem;
             break;
         }
 
         var length = elem !== null ? elem : _DefaultParams2["default"].length;
         calcLength += (128 / length); // 128部音符が何個あるか
-        console.log("_calcDuration noteLength :" + length);
+        //console.log("_calcDuration noteLength :" + length);
         return 60 / _this._tempo * (4 / length);
       });
 

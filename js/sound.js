@@ -196,8 +196,6 @@ class TrackSoundPulse extends TrackSoundData
         info.osc.stop(t1 + WAIT_SEC);
 
         this.setStopPlayInfoTime(info, t1 + WAIT_SEC + 0.5);
-
-        console.log(e);
     }
 }
 
@@ -447,8 +445,10 @@ const createAudioBuffer = async () => {
         'assets/audio/knoc.wav'
         ,'assets/audio/critical.wav'
         ,'assets/audio/fly.wav'
-        ,'assets/audio/8bit_wav/KK1.wav'
-        ,'assets/audio/8bit_wav/KK2.wav'
+        ,'assets/audio/cancel2.wav'
+        ,'assets/audio/tam.wav'
+        //,'assets/audio/8bit_wav/KK1.wav'
+        //,'assets/audio/8bit_wav/KK2.wav'
     ]
     for(let i = 0; i < resources.length; ++i){
         const buffer = await setupSample(resources[i]);
