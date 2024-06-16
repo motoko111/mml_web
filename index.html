@@ -2,6 +2,8 @@
 <html>
 <head>
   <meta charset="UTF-8" />
+  <title>mml_editor</title>
+  <link rel="icon" href="/assets/icon/favicon.ico" />
   <script src="lib/Tone.js"></script>
   <script src="lib/dat.gui.min.js"></script>
   <script src="lib/p5.min.js"></script>
@@ -17,12 +19,10 @@
 </head>
 <body>
   <article style="background-color:rgb(18, 16, 24)">
-    <!--p5.jsを使って描画するコンテンツ-->
     <main></main>
     <script src="js/sketch.js"></script>
 </article>
 <article style="background-color:rgb(255, 255, 255)">
-    <!--p5.jsを使わないコンテンツ-->
     <button id="button" onclick="newFile();">new</button>
     <button id="save" onclick="saveLocalStorage();restart();">save</button>
     <button id="export" onclick="exportFile();">export</button>
