@@ -21,7 +21,10 @@ function getEmitterCurrentPlayTime(){
 
 function getEmitterCurrentTime(){
   if(mmlEmitter != null && mmlEmitter.scheduler != null) return mmlEmitter.scheduler.currentTime - playEmitterStartTime;
-  return Tone.now() - playEmitterStartTime;
+  if(isActiveTracks(editTracks)){
+    return Tone.now() - playEmitterStartTime;
+  }
+  return 0;
 }
 
 function getEmitterCurrentLength(){
@@ -223,6 +226,13 @@ function stopTracks(_tracks){
   for(let i = 0; i < _tracks.length; ++i){
     _tracks[i].stop();
   }
+}
+
+function isActiveTracks(_tracks){
+  for(let i = 0; i < _tracks.length; ++i){
+    if(_tracks[i].isActive()) return true;
+  }
+  return false;
 }
 
 function createTrackSounds(){

@@ -1145,7 +1145,7 @@ var MMLIterator = (function () {
         }
 
         var length = elem !== null ? elem : _DefaultParams2["default"].length;
-        calcLength += (4 / length);
+        calcLength += (128 / length); // 128部音符が何個あるか
         console.log("_calcDuration noteLength :" + length);
         return 60 / _this._tempo * (4 / length);
       });
@@ -1188,7 +1188,8 @@ var MMLIterator = (function () {
       var tone = this._tone;
       var key = this._key;
       var tempo = this._tempo;
-      var length = this._lastNoteLength; // 追加
+      var length128 = this._lastNoteLength; // 追加
+      var length = this._lastNoteLength / 128 * 4; // 4/4のときの長さ
       var envelope = this._envelope;
       var mute = this._mute;
       var wave = this._wave;
@@ -1196,7 +1197,7 @@ var MMLIterator = (function () {
       this._wave = null
 
       this._processedTime = this._processedTime + duration;
-      this._currentLength = this._currentLength + (128 / length); // 少数を使わないように128分音符を基準の長さにする
+      this._currentLength = this._currentLength + length128; // 少数を使わないように128分音符を基準の長さにする
 
       return arrayToIterator(noteNumbers.map(function (noteNumber) {
         return { type: type,
@@ -1222,7 +1223,7 @@ var MMLIterator = (function () {
       var duration = this._calcDuration(command.noteLength);
 
       this._processedTime = this._processedTime + duration;
-      this._currentLength = this._currentLength + (128 / this._lastNoteLength); // 少数を使わないように128分音符を基準の長さにする
+      this._currentLength = this._currentLength + this._lastNoteLength; // 少数を使わないように128分音符を基準の長さにする
     }
   }, {
     key: _Syntax2["default"].Octave,

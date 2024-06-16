@@ -35,12 +35,18 @@ class TrackSound
         if(this.data == null) return;
         this.data.stopPlayInfoAll();
     }
+
+    isActive(){
+        if(this.data == null) return false;
+        return this.data.isActive();
+    }
 }
 
 class TrackSoundData
 {
     constructor(){
         this.playInfos = []
+        this.isActivePlay = false;
     }
 
     setEnvelope(env, envParams)
@@ -52,14 +58,22 @@ class TrackSoundData
     }
 
     tick(dt){
+        this.isActivePlay = false;
         for(let i = 0; i < this.playInfos.length; ++i){
             if(this.playInfos[i].isActive){
                 if(this.playInfos[i].inactiveTime < Tone.now()){
                     if(this.playInfos[i].onended != null) this.playInfos[i].onended();
                     this.playInfos[i].isActive = false;
                 }
+                else{
+                    this.isActivePlay = true;
+                }
             }
         }
+    }
+
+    isActive(){
+        return this.isActivePlay;
     }
 
     playNote(e){

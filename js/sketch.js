@@ -128,15 +128,14 @@ function draw() {
         let note = notes[j];
         let baseTime =  60 / note.tempo * (4 / 8); // 1ノート幅の時間
         let noteTime = note.playbackTime - note.startTime;
-        // console.log("test" + note.startTime)
-        // let startLen = note.currentLength / 2 / 2 / 2 / 2 ; // 128分刻み⇒8分刻みに変更
         if(noteTime < offsetTime - 2.0) continue;
         let duration = note.duration /* 音符の長さ */ * (note.quantize /* 音の長さ倍率 */ / 100);
+        let length8 = note.length * 2; // 8分音符が1マスの大きさ
         // 音が鳴っているか
         if(noteTime <= offsetTime && offsetTime <= noteTime + duration ) {
           KeyboardStatus[note.noteNumber + note.key] = i
         }
-        let right = drawNote(note.trackNumber, offsetTime, noteTime , note.noteNumber + note.key, note.length, baseTime);
+        let right = drawNote(note.trackNumber, offsetTime, noteTime , note.noteNumber + note.key, length8, baseTime);
         if(right >= windowWidth) break;
       }
     }
@@ -220,7 +219,7 @@ function getNoteY(noteNumber){
 
 function drawNote(trackNumber, offsetTime, noteTime, noteNumber, length, oneNoteTime){
   let startPos = (noteTime - offsetTime) / oneNoteTime;
-  let widthRate = (8 / length); // 8/8
+  let widthRate = length; // 8/8
   let noteColor = TRACK_COLORS[trackNumber];
   let w = DRAW_NOTE_WIDTH * widthRate;
   let h = DRAW_NOTE_HEIGHT;
