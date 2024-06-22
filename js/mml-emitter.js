@@ -1003,7 +1003,8 @@ exports["default"] = {
   quantize: 75,
   loopCount: 2,
   envelope: [0,0.1,1,0.5],
-  wave: [],
+  wave: null,
+  slur: null,
   mute: false,
 };
 module.exports = exports["default"];
@@ -1055,6 +1056,7 @@ var MMLIterator = (function () {
     this._envelope = _DefaultParams2["default"].envelope;
     this._mute = _DefaultParams2["default"].mute;
     this._wave = _DefaultParams2["default"].wave;
+    this._slur = _DefaultParams2["default"].slur;
     this._infiniteLoopIndex = -1;
     this._loopStack = [];
     this._done = false;
@@ -1145,7 +1147,7 @@ var MMLIterator = (function () {
         }
 
         var length = elem !== null ? elem : _DefaultParams2["default"].length;
-        calcLength += (128 / length); // 128部音符が何個あるか
+        calcLength += Math.ceil(128 / length); // 128部音符が何個あるか
         //console.log("_calcDuration noteLength :" + length);
         return 60 / _this._tempo * (4 / length);
       });
@@ -1194,11 +1196,34 @@ var MMLIterator = (function () {
       var mute = this._mute;
       var wave = this._wave;
       var currentLength = this._currentLength;
-      this._wave = null
+      this._wave = null;
 
       this._processedTime = this._processedTime + duration;
       this._currentLength = this._currentLength + length128; // 少数を使わないように128分音符を基準の長さにする
 
+      let slur = []
+      // 次の情報を見て次がスラーだったらスラー用のデータを作る
+      for(; this.hasNext();){
+        let c = this._forward(true);
+        if(!this._slur){
+          this._commandIndex--;
+          break;
+        }
+        this._slur = null;
+        let len = this._calcDuration(c.noteLength);
+        let length128_2 = this._lastNoteLength;
+				1 != c.noteNumbers.length && console.log("Slur Error");
+				let noteNumber_2 = this._calcNoteNumber(c.noteNumbers[0]);
+        //console.log(noteNumber_2);
+        slur.push({
+          time: this._processedTime,
+					duration: len,
+					noteNumber: noteNumber_2
+        });
+        this._processedTime = this._processedTime + len;
+        this._currentLength = this._currentLength + length128_2; // 少数を使わないように128分音符を基準の長さにする
+      }
+      
       return arrayToIterator(noteNumbers.map(function (noteNumber) {
         return { type: type,
           time: time,
@@ -1213,6 +1238,7 @@ var MMLIterator = (function () {
           envelope:envelope,
           mute:mute,
           wave:wave,
+          slur:slur,
           key:key
           };
       }));
@@ -1285,6 +1311,12 @@ var MMLIterator = (function () {
     key: _Syntax2["default"].Wave,
     value: function value(command) {
       this._wave = command.value !== null ? command.value : _DefaultParams2["default"].wave;
+    }
+  },
+  {
+    key: _Syntax2["default"].Slur,
+    value: function value(command) {
+      this._slur = command.value !== null ? command.value : _DefaultParams2["default"].slur;
     }
   },
   {
@@ -1760,16 +1792,13 @@ var MMLParser = (function () {
   },
   // ======================= 追加 =======================
   {
-    key: "_readSlur",
-    value: function _readSlur() {
-      this.scanner.forward();
-
-      if (this.scanner.match("&")) {
-        this.scanner.next();
-        return this._readLength();
-      }
-
-      return null;
+    key: "readSlur",
+    value: function readSlur() {
+      this.scanner.expect("&");
+      return {
+        type: _Syntax2["default"].Slur,
+        value: true
+      };
     }
   },
   {
@@ -1955,6 +1984,7 @@ exports["default"] = {
   NoteQuantize: "NoteQuantize",
   Tempo: "Tempo",
   Tone: "Tone",
+  Slur: "Slur",
   Key: "key",
   Envelope: "Envelope",
   Mute: "Mute",
@@ -2264,6 +2294,8 @@ var SeqEmitter = (function (_EventEmitter) {
       var _this2 = this;
 
       var t0 = arguments.length <= 0 || arguments[0] === undefined ? this._scheduler.currentTime : arguments[0];
+
+      //console.log("this._scheduler.currentTime=" + this._scheduler.currentTime + " t0:" + t0 + " now:" + getCurrentTime());
 
       if (this._startTime === -1) {
         this._startTime = t0;
@@ -2799,7 +2831,9 @@ Object.defineProperty(exports, "__esModule", {
 exports["default"] = Object.defineProperties({}, {
   currentTime: {
     get: function get() {
-      return Date.now() / 1000;
+      //return Date.now() / 1000;
+      //console.log("currentTime = " + getCurrentTime() + " Date.Now = " + ( Date.now() / 1000 ) )
+      return getCurrentTime();
     },
     configurable: true,
     enumerable: true

@@ -17,6 +17,14 @@ class MMLEditor{
         if(this.editor != null) return
         this.editor.setValue("");
     }
+    insertNoteNumber(noteNumber, length){
+        if(!length) {
+            this.editor.insert(mtoc(noteNumber, true));
+        }
+        else{
+            this.editor.insert(mtoc(noteNumber, true));
+        }
+    }
     setEnableEditPlay(flag){
         this.enableEditPlay = flag;
     }
@@ -101,7 +109,6 @@ class MMLEditor{
             bindKey: {win: "Ctrl-S", "mac": "Cmd-S"},
             exec: function(editor) {
                 saveLocalStorage();
-                restart();
                 //console.log("saving", editor.session.getValue())
             }
         })
@@ -118,7 +125,17 @@ class MMLEditor{
             bindKey: {win: "Alt-L", "mac": "Option-L"},
             exec: function(editor) {
                 stop();
+                restart();
+            }
+        })
+        this.editor.commands.addCommand({
+            name: 'check line length',
+            bindKey: {win: "Alt-I", "mac": "Option-I"},
+            exec: function(editor) {
+                stop();
                 _this.editPlay(_this.analysisPlayLineNote(), true);
+                let note = getLastEditNote();
+                _this.editor.insert("" + note.currentLength);
             }
         })
         this.editor.session.on('change', function(delta) {

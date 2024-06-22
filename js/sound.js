@@ -10,15 +10,21 @@ class TrackSound
 {
     constructor(data){
         this.data = data;
-        this.time = Tone.now();
+        this.time = getCurrentTime();
         let _this = this;
         // tick
         setInterval(function(){
             if(_this.data == null) return;
-            let dt = Tone.now()-_this.time;
-            _this.time = Tone.now();
+            let dt = getCurrentTime()-_this.time;
+            _this.time = getCurrentTime();
             _this.data.tick(dt);
         }, 100);
+    }
+
+    // 再生準備が完了しているか
+    isLoaded(){
+        if(this.data == null) return true;
+        return this.data.isLoaded();
     }
 
     setSoundData(data){
@@ -28,6 +34,7 @@ class TrackSound
     playNote(e){
         if(this.data == null) return;
         if(e.mute) return;
+        if(e.playbackTime < 0) return;
         this.data.playNote(e);
     }
 
@@ -57,11 +64,25 @@ class TrackSoundData
         env.release = (envParams != null && envParams.length > 3) ? envParams[3] : 0.5
     }
 
+    setSlur(frequency, slur, t0, time){
+        if(slur == null || slur.length < 1) return 0;
+        
+        let t = t0 + time;
+        let addTime = 0;
+        slur.forEach(s => {
+            t += s.duration;
+            addTime += s.duration;
+            console.log("slur:" + s.duration + "," + s.noteNumber);
+            frequency.linearRampToValueAtTime(mtoco(s.noteNumber), t);
+        });
+        return addTime;
+    }
+
     tick(dt){
         this.isActivePlay = false;
         for(let i = 0; i < this.playInfos.length; ++i){
             if(this.playInfos[i].isActive){
-                if(this.playInfos[i].inactiveTime < Tone.now()){
+                if(this.playInfos[i].inactiveTime < getCurrentTime()){
                     if(this.playInfos[i].onended != null) this.playInfos[i].onended();
                     this.playInfos[i].isActive = false;
                 }
@@ -70,6 +91,10 @@ class TrackSoundData
                 }
             }
         }
+    }
+
+    isLoaded(){
+        return true;
     }
 
     isActive(){
@@ -183,7 +208,7 @@ class TrackSoundPulse extends TrackSoundData
         var t1 = t0 + time;
         var volume = (e.velocity / 128); // 倍率
         var envelope = e.envelope; // エンベロープ
-        var note = mtoco(e.noteNumber + e.key);
+        var note = mtoco(e.noteNumber + e.key - 1);
 
         let info = this.getOrCreatePlayInfo();
 
@@ -191,6 +216,9 @@ class TrackSoundPulse extends TrackSoundData
 
         info.osc.width.setValueAtTime(PULSE_TYPES[e.tone], t0 + WAIT_SEC);
         info.osc.frequency.setValueAtTime(note, t0 + WAIT_SEC);
+        let addTime = this.setSlur(info.osc.frequency, e.slur, t0 + WAIT_SEC, time);
+        time += addTime;
+        t1 = t0 + time;
         info.osc.start(t0 + WAIT_SEC);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.osc.stop(t1 + WAIT_SEC);
@@ -516,5 +544,59 @@ class TrackSoundSource extends TrackSoundData
         info.bufferSorce.stop(t1 + WAIT_SEC);
 
         this.setStopPlayInfoTime(info, t1 + WAIT_SEC + 0.5);
+    }
+}
+
+class TrackSoundPlayer extends TrackSoundData
+{
+    constructor(){
+        super();
+        let info = this.getOrCreatePlayInfo();
+        info.isActive = false;
+        this.playerInfo = info;
+    }
+
+    isLoaded(){
+        if(this.playerInfo) return this.playerInfo.player.loaded;
+        return false;
+    }
+
+    createPlayInfo(){
+        let info = {}
+        info.player = new Tone.Player({
+            url:"/assets/audio/saigetsu_lsdj.mp3",
+            autostart:false,
+            onload: function(){
+                info.duration = info.player.buffer.duration; // 曲の長さ
+            }
+        });
+        info.filter = new Tone.Filter(440, "bandpass");
+        let _this = this
+        info.onended = function(){
+            _this.stopPlayInfo(info);
+        }
+        return info;
+    }
+
+    stopPlayInfo(info){
+        info.isActive = false;
+        if (info.player && info.player.state === 'started') {
+            info.player.stop();
+        }
+    }
+
+    playNote(e){
+        var t0 = e.playbackTime;// 再生開始時間
+        let info = this.getOrCreatePlayInfo();
+        var t1 = info.duration + e.playbackTime;
+        var volume = (e.velocity / 128); // 倍率 // db -60:ほぼ無音 0:最大音量
+
+        if(info.player.loaded){
+            info.player.toDestination();
+            info.player.start(t0 + WAIT_SEC, Math.min(info.duration, Math.max(0, getCurrentTime() - t0)));
+            info.player.volume.setValueAtTime(-16 + volume * 16, t0);
+    
+            this.setStopPlayInfoTime(info, t1 + WAIT_SEC + 0.5);
+        }
     }
 }

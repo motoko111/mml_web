@@ -17,39 +17,44 @@ var SketchAccess = {
   },
 }
 
-var DRAW_NOTE_CANVAS_HEIGHT = 400 // ノートを描画するサイズ
-var DRAW_KEYBOARD_WIDTH = 100 // キーボードのサイズ
-var DRAW_KEYBOARD_HEIGHT = 10 // キーボードのサイズ
-var DRAW_NOTE_WIDTH = 20 // ノートのサイズ
-var DRAW_NOTE_HEIGHT = 10 // ノートのサイズ
-var DefaultNoteNumber = 69 + 12 * 1 // ノートの基準
+let DRAW_NOTE_CANVAS_HEIGHT = 400 // ノートを描画するサイズ
+let DRAW_SCROLL_VIEW_Y = DRAW_NOTE_CANVAS_HEIGHT;
+let DRAW_KEYBOARD_WIDTH = 100 // キーボードのサイズ
+let DRAW_KEYBOARD_HEIGHT = 10 // キーボードのサイズ
+let DRAW_NOTE_WIDTH = 20 // ノートのサイズ
+let DRAW_NOTE_HEIGHT = 10 // ノートのサイズ
+let DRAW_SCROLL_HEIGHT = 12; // スクロール縦幅
+let DefaultNoteNumber = 69 + 12 * 1 // ノートの基準
 const NOTE_NUMBER_MAX = 69 + 12 * 8;
 const NOTE_NUMBER_MIN = 69 - 12 * 4 - 5 + 12 * 4;
-var TRACK_COLORS = []
+let TRACK_COLORS = []
 
 var TrackVisibleSettings = [true,true,true,true,true,true,true,true,true,true]
 var ScetchSettings = {
   "DrawNoteNumberType":"note", // note/number/none
 }
 var KeyboardStatus = new Map();
-var HScroll = null;
-var VScroll = null;
+let scrollView = null;
+let scrollViewValue = 0.0;
 
 function setup() {
-  DRAW_NOTE_CANVAS_HEIGHT = windowHeight * 0.4;
-  canvas = createCanvas(windowWidth, windowHeight * 0.4);
+  DRAW_NOTE_CANVAS_HEIGHT = windowHeight * 0.4 - DRAW_SCROLL_HEIGHT;
+  DRAW_SCROLL_VIEW_Y = DRAW_NOTE_CANVAS_HEIGHT;
+  canvas = createCanvas(windowWidth - 20, windowHeight * 0.4);
   TRACK_COLORS = [
     color(0, 155, 255),
     color(255, 155, 0),
     color(155, 255, 0),
     color(255, 45, 45),
-    color(255, 255, 255),
-    color(255, 255, 255),
+    color(102, 134, 166),
+    color(237, 100, 71),
     color(255, 255, 255),
     color(255, 255, 255),
     color(255, 255, 255),
     color(255, 255, 255),
   ]
+
+  scrollView = new ScrollHelper(0, DRAW_SCROLL_VIEW_Y, canvas.width, DRAW_SCROLL_HEIGHT, false, onChangeTimeRateScroll, onChangeTimeRateScrollEnded);
 
   // gui setup
   //var gui = new dat.GUI();
@@ -58,8 +63,11 @@ function setup() {
 
 //ウィンドウサイズが変更されたときに実行される関数
 function windowResized() {
-  DRAW_NOTE_CANVAS_HEIGHT = windowHeight * 0.4;
-  resizeCanvas(windowWidth, windowHeight * 0.4);
+  DRAW_NOTE_CANVAS_HEIGHT = windowHeight * 0.4 - DRAW_SCROLL_HEIGHT;
+  DRAW_SCROLL_VIEW_Y = DRAW_NOTE_CANVAS_HEIGHT;
+  resizeCanvas(windowWidth - 20, windowHeight * 0.4);
+
+  scrollView = new ScrollHelper(0, DRAW_SCROLL_VIEW_Y, canvas.width, DRAW_SCROLL_HEIGHT, false, onChangeTimeRateScroll, onChangeTimeRateScrollEnded);
 }
 
 function draw() {
@@ -107,7 +115,8 @@ function draw() {
       }
       for(let n = 0; n < 1; ++n){
         strokeWeight(0.2)
-        rect(side_x,y,note_w*100,h)
+        let draw_note_w = Math.min(canvas.width - DRAW_KEYBOARD_WIDTH,note_w*100);
+        rect(side_x,y,draw_note_w,h)
         strokeWeight(1)
         side_x += note_w*100
       }
@@ -130,13 +139,20 @@ function draw() {
         let noteTime = note.playbackTime - note.startTime;
         if(noteTime < offsetTime - 2.0) continue;
         let duration = note.duration /* 音符の長さ */ * (note.quantize /* 音の長さ倍率 */ / 100);
-        let length8 = note.length * 2; // 8分音符が1マスの大きさ
+        let noteLength = note.length;
+        let length8 = noteLength * 2; // 8分音符が1マスの大きさ
+        if(note.slur){
+          note.slur.forEach(s => {
+            duration += s.duration;
+            length8 += (s.duration / baseTime);
+          });
+        }
         // 音が鳴っているか
         if(noteTime <= offsetTime && offsetTime <= noteTime + duration ) {
           KeyboardStatus[note.noteNumber + note.key] = i
         }
         let right = drawNote(note.trackNumber, offsetTime, noteTime , note.noteNumber + note.key, length8, baseTime);
-        if(right >= windowWidth) break;
+        if(right >= canvas.width) break;
       }
     }
   }
@@ -207,6 +223,9 @@ function draw() {
   }
   
   KeyboardStatus = {};
+
+  scrollView.draw();
+
 }
 
 function getNoteX(rate){
@@ -249,4 +268,14 @@ function mouseWheel(event) {
     DefaultNoteNumber += 4;
     DefaultNoteNumber = Math.min(NOTE_NUMBER_MAX, DefaultNoteNumber);
   }
+}
+
+function onChangeTimeRateScroll(x,y){
+  scrollViewValue = x;
+}
+function onChangeTimeRateScrollEnded(x,y){
+  scrollViewValue = x;
+}
+function getTimeSliderValue(){
+  return scrollViewValue;
 }

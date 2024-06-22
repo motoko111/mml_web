@@ -1,12 +1,13 @@
 
 const SOUND_MAP = ['A','A#','B','C','C#','D','D#','E','F','F#','G','G#'];
+const SOUND_MAP_LOWER = ['a','a+','b','c','c+','d','d+','e','f','f+','g','g+'];
 
 function mtof(noteNumber) {
     return 440 * Math.pow(2, (noteNumber - 69) / 12);
   }
   
-function mtoco(noteNumber){
-    return mtoc(noteNumber) + "" + mtoo(noteNumber);
+function mtoco(noteNumber, isLower){
+    return mtoc(noteNumber,isLower) + "" + mtoo(noteNumber);
 }
 
 function toNoteIndex(noteNumber){
@@ -33,10 +34,10 @@ function isBlackKeyFromNoteNumber(noteNumber){
     }
 }
 
-function mtoc(noteNumber){
+function mtoc(noteNumber, isLower){
     let a4_diff = (noteNumber - 69);
     let sound_index = (a4_diff + 1200) % 12
-    return SOUND_MAP[sound_index]
+    return isLower ? SOUND_MAP_LOWER[sound_index] : SOUND_MAP[sound_index]
 }
 
 function mtoo(noteNumber){
@@ -50,4 +51,8 @@ function mtoo(noteNumber){
         octave = 4 - Math.floor(Math.abs(c4_diff) / 12) + (Math.abs(c4_diff) % 12 > 0 ? -1 : 0);
     }
     return octave
+}
+
+function getCurrentTime(){
+    return Tone.context.currentTime;
 }

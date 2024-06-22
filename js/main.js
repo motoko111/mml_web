@@ -7,6 +7,7 @@ var lastEditNote = null
 var mmlFilePath = null;
 
 var mmlEditor = new MMLEditor();
+var midiKeyboard = new MidiKeyboard();
 
 var finishedInitAudio = false;
 
@@ -22,7 +23,7 @@ function getEmitterCurrentPlayTime(){
 function getEmitterCurrentTime(){
   if(mmlEmitter != null && mmlEmitter.scheduler != null) return mmlEmitter.scheduler.currentTime - playEmitterStartTime;
   if(isActiveTracks(editTracks)){
-    return Tone.now() - playEmitterStartTime;
+    return getCurrentTime() - playEmitterStartTime;
   }
   return 0;
 }
@@ -125,20 +126,19 @@ function loadFile(txt){
   var mmlFilePath = txt;
   mmlEditor.editor.setValue(txt, -1);  // -1はカーソルをファイルの先頭に戻す
   drawUpdate();
-  start();
 }
 
 function start(){
   stop();
-  play(mmlEditor.editor.getValue());
+  play(mmlEditor.editor.getValue(), getTimeSliderValue() * 60 * 5);
 }
 
 function stop(){
-  if(mmlEmitter != null) {
+  if(mmlEmitter) {
     mmlEditor.resetLogAll();
     stopTracks(tracks);
     stopTracks(editTracks);
-    if(mmlEmitter != null && mmlEmitter.state == "running"){
+    if(mmlEmitter != null){
       mmlEmitter.stop();
     }
     mmlEmitter = null;
@@ -146,7 +146,7 @@ function stop(){
   }
 }
 
-function play(mml) {
+function play(mml, startTime) {
 
   setupAudioAsync(() => {
     try{
@@ -164,7 +164,7 @@ function play(mml) {
         mmlEmitter.stop();
       });
     
-      mmlEmitter.start();
+      mmlEmitter.start(getCurrentTime() - startTime);
       playEmitterStartTime = mmlEmitter._startTime;
     
       drawUpdate();
@@ -212,6 +212,7 @@ function editPlay(mml, playLine){
             G_NoteAnalysis.add(playEmitterStartTime, JSON.parse(JSON.stringify(note)));
             playEditNote(note);
           });
+          lastEditNote = JSON.parse(JSON.stringify(lastNote));
         }
         else{
           if(lastNote != null){
@@ -222,6 +223,7 @@ function editPlay(mml, playLine){
             lastNote.currentLength = 0;
             //console.log(lastNote)
             G_NoteAnalysis.add(playEmitterStartTime, JSON.parse(JSON.stringify(lastNote)));
+            lastEditNote = JSON.parse(JSON.stringify(lastNote));
             playEditNote(lastNote);
           }
         }
@@ -251,6 +253,13 @@ function isActiveTracks(_tracks){
   return false;
 }
 
+function isLoadedTracks(_tracks){
+  for(let i = 0; i < _tracks.length; ++i){
+    if(!_tracks[i].isLoaded()) return false;
+  }
+  return true;
+}
+
 function createTrackSounds(){
   return [
     new TrackSound(new TrackSoundPulse()),
@@ -260,7 +269,7 @@ function createTrackSounds(){
     new TrackSound(new TrackSoundSource()),
     new TrackSound(new TrackSoundSource()),
     new TrackSound(new TrackSoundSource()),
-    new TrackSound(new TrackSoundSource()),
+    new TrackSound(new TrackSoundPlayer()),
   ]
 }
 
@@ -272,6 +281,31 @@ function playNote(e){
 function playEditNote(e){
   var track = editTracks[e.trackNumber];
   track.playNote(e);
+}
+
+function getLastEditNote(){
+  return lastEditNote;
+}
+
+function setInputMidi(flag){
+  if(flag){
+    midiKeyboard.onNoteAttackEvent = (noteNumber) => {
+      if(mmlEditor) {
+        mmlEditor.insertNoteNumber(noteNumber);
+      }
+    };
+    midiKeyboard.onNoteReleaseEvent = (noteNumber, time) => {
+    };
+    
+    midiKeyboard.setEnablePlay(false);
+  }
+  else{
+    midiKeyboard.onNoteAttackEvent = null;
+    midiKeyboard.onNoteReleaseEvent = null;
+
+    midiKeyboard.setEnablePlay(true);
+  }
+  
 }
 
 function initDocument(){
@@ -299,12 +333,21 @@ function waitForCondition(conditionFunction, interval = 1000) {
   });
 }
 
+function setupMidiKeyboard(){
+  if(!midiKeyboard.isActive()){
+    midiKeyboard.requestMidiAccess();
+  }
+}
+
 // 初期化操作
 var setupAudioAsync = async (callback) => {
 
   //console.log("setupAudioAsync check");
 
   if(finishedInitAudio) {
+    while(!isLoadedTracks(tracks) || !isLoadedTracks(editTracks)){
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
     if(callback != null) callback();
     return;
   }
@@ -320,6 +363,12 @@ var setupAudioAsync = async (callback) => {
   
   tracks = createTrackSounds();
   editTracks = createTrackSounds();
+
+  while(!isLoadedTracks(tracks) || !isLoadedTracks(editTracks)){
+    await new Promise(resolve => setTimeout(resolve, 100))
+  }
+
+  setupMidiKeyboard();
 
   finishedInitAudio = true;
 
