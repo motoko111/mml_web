@@ -564,7 +564,8 @@ class TrackSoundPlayer extends TrackSoundData
     createPlayInfo(){
         let info = {}
         info.player = new Tone.Player({
-            url:"/assets/audio/saigetsu_lsdj.mp3",
+            // url:"/assets/audio/saigetsu_lsdj.mp3",
+            url:'/assets/audio/knoc.wav',
             autostart:false,
             onload: function(){
                 info.duration = info.player.buffer.duration; // 曲の長さ

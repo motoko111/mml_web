@@ -37,6 +37,8 @@ class NoteAnalysis {
   class NoteAnalysisTrack {
     constructor(trackNumber){
       this.trackNumber = trackNumber
+      this.startTime = 0;
+      this.lastTime = 0;
       this.notes  = []
     }
     add(startTime, e){
