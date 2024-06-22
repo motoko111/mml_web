@@ -269,7 +269,7 @@ function createTrackSounds(){
     new TrackSound(new TrackSoundSource()),
     new TrackSound(new TrackSoundSource()),
     new TrackSound(new TrackSoundSource()),
-    new TrackSound(new TrackSoundPlayer()),
+    new TrackSound(new TrackSoundSource()),
   ]
 }
 
