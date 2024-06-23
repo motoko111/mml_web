@@ -27,7 +27,7 @@ class WaveDrawer{
                     freq = this.freqData[i]; // -1 から 1 になるように
                 }
                 const x = Math.floor((i / drawLength) * this.canvas.width);
-                const y = Math.floor((freq) * (waveHeight/2) + (this.canvas.height / 2));
+                const y = Math.floor((-freq) * (waveHeight/2) + (this.canvas.height / 2));
                 if(i === 0){
                     this.context.moveTo(x,y);
                 }
