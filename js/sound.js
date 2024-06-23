@@ -250,7 +250,7 @@ class TrackSoundPulse extends TrackSoundData
         var t1 = t0 + time;
         var volume = (e.velocity / 128); // 倍率
         var envelope = e.envelope; // エンベロープ
-        var note = mtoco(e.noteNumber + e.key - 1);
+        var note = mtoco(e.noteNumber + e.key);
 
         let info = this.getOrCreatePlayInfo();
 
@@ -269,6 +269,7 @@ class TrackSoundPulse extends TrackSoundData
     }
 }
 
+/*
 class TrackSoundWave extends TrackSoundData
 {
     constructor(){
@@ -287,18 +288,6 @@ class TrackSoundWave extends TrackSoundData
         info.waveUpdateTime = -9999;
         info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
         info.env = new Tone.AmplitudeEnvelope();
-        /*
-        info.osc = new Tone.Oscillator({
-            type:"custom",
-            partials:this.oscWaves
-        });
-        // osc -> env => output
-        info.osc.connect(info.env);
-        info.env.toDestination();
-        info.onended = function(){
-            info.isActive = false;
-        };
-        */
         return info;
     }
 
@@ -336,7 +325,7 @@ class TrackSoundWave extends TrackSoundData
     }
 
     playNote(e){
-        var time = e.duration /* 音符の長さ */ * (e.quantize /* 音の長さ倍率 */ / 100);
+        var time = e.duration * (e.quantize / 100);
         var t0 = e.playbackTime;// 再生開始時間
         var t1 = t0 + time + 0.5;
         var volume = (e.velocity / 128); // 倍率
@@ -376,6 +365,133 @@ class TrackSoundWave extends TrackSoundData
         this.setPlayInfoTime(info, t0 + WAIT_SEC, t1 + WAIT_SEC);
 
         //console.log(this.osc.get())
+    }
+}
+*/
+
+class TrackSoundWave extends TrackSoundData
+{
+    constructor(){
+        super();
+        this.defaultWaveSize = 16
+        this.waveUpdateTime = 0;
+        this.oscWaves = this.createWave();
+    }
+
+    createWaveBuffer(duration) {
+        const sampleRate = Tone.context.sampleRate;
+        const bufferSize = sampleRate * duration;
+        const buffer = Tone.context.createBuffer(1, bufferSize, sampleRate);
+        let data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1; // -1から1のランダムな値を設定
+        }
+        return new Tone.Buffer(buffer);
+    }
+
+    notPlayMute(){
+        return false; // waveの場合はmuteでも動かす
+    }
+
+    createPlayInfo(){
+        let info = {}
+        info.waveUpdateTime = -9999;
+        info.waveBuffer = this.createWaveBuffer(1);
+        info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
+        info.env = new Tone.AmplitudeEnvelope();
+        return info;
+    }
+
+    stopPlayInfo(info){
+        info.isActive = false;
+        if(info.bufferSorce != null){
+            info.bufferSorce.disconnect(info.waveform);
+            info.bufferSorce.stop();
+        }
+        info.bufferSorce = null;
+    }
+
+    getWaveValue(n){
+        return n/(this.defaultWaveSize - 1) * 2 - 1;
+    }
+
+    getWaveValues(nList){
+        let list = []
+        for(let i = 0; i < nList.length; ++i)
+        {
+            list.push(this.getWaveValue(nList[i]));
+        }
+        return list
+    }
+
+    createWave(){
+        return this.getWaveValues([2,2,3,4,5,6,7,8,9,10,11,12,13,14,14]);
+    }
+
+    setWave(waves){
+        console.log("setWave="+waves);
+        this.oscWaves = this.getWaveValues(waves);
+    }
+
+    checkAndSetWave(waves){
+        if(waves == null || waves.length < 1) return false;
+        this.setWave(waves)
+        return true
+    }
+
+    playNote(e){
+        var time = e.duration * (e.quantize / 100);
+        var t0 = e.playbackTime;// 再生開始時間
+        var t1 = t0 + time + 0.5;
+        var volume = (e.velocity / 128); // 倍率
+        var envelope = e.envelope; // エンベロープ
+        var note = mtoco(e.noteNumber + e.key);
+
+        let info = this.getOrCreatePlayInfo();
+
+        if(this.checkAndSetWave(e.wave)){
+            this.waveUpdateTime = e.playbackTime;
+            if(e.mute){
+                info.isActive = false;
+                return;
+            }
+        }
+
+        if(Math.abs(this.waveUpdateTime - info.waveUpdateTime) > 0.0001){
+            info.waveUpdateTime = this.waveUpdateTime;
+            
+            let data = info.waveBuffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) {
+                let rate = ((i + 1) / data.length);
+                let index = Math.floor(this.oscWaves.length * rate + 0.5);
+                index = Math.max(0, Math.min(this.oscWaves.length-1, index));
+                data[i] = this.oscWaves[index];
+            }
+            // console.log(info.waveBuffer.getChannelData(0));
+        }
+        
+        // 毎回作る必要があるらしい
+        info.bufferSorce = new Tone.BufferSource(info.waveBuffer);
+        info.bufferSorce.loop = true;
+        info.bufferSorce.connect(info.waveform);
+        info.waveform.connect(info.env);
+        info.env.toDestination();
+        
+        this.setEnvelope(info.env, envelope);
+
+        let notePlayRate = Math.pow(2,(e.noteNumber - 69 + e.key) / 12); // A4からの周波数倍率
+        // samplerate / info.waveBuffer.getChannelData(0).length = デフォルトの周波数
+        // これを440Hzにしたい デフォルトの周波数 * x = 440; x = デフォルトの周波数 / 440
+        let defaultHz = Tone.context.sampleRate / info.waveBuffer.getChannelData(0).length;
+        let defaultHzPlayRate = 440.0 / defaultHz;
+        let playbackRate = 1.0 * notePlayRate * defaultHzPlayRate;
+        //console.log(' defaultHz:' + defaultHz + " defaultHzPlayRate:" + defaultHzPlayRate + " playbackRate:" + playbackRate + " notePlayRate:" + notePlayRate)
+        info.bufferSorce.playbackRate.setValueAtTime(playbackRate, t0 + WAIT_SEC);
+        info.bufferSorce.start(t0 + WAIT_SEC);
+        info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
+        info.bufferSorce.stop(t1 + WAIT_SEC);
+
+        this.setPlayInfoTime(info, t0 + WAIT_SEC, t1 + WAIT_SEC);
     }
 }
 
