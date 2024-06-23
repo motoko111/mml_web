@@ -28,9 +28,18 @@ class MidiKeyboard {
                     this.inputs.push(input);
                 });
 
+                if(this.inputs.length > 0){
+                    popup("midiの接続に成功しました。");
+                }
+                else{
+                    popup("midiが接続されていません。");
+                }
                 console.log("MIDI接続成功:", midiAccess);
+
+                
             }, () => {
                 console.error("MIDI接続失敗");
+                popup("midiの接続に失敗しました。");
             });
         } else {
             console.warn("このブラウザはWeb MIDI APIをサポートしていません。");

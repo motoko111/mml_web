@@ -1644,6 +1644,9 @@ var MMLParser = (function () {
           value: valueList
         };
       }
+      // value
+      else if(nextStr == "v"){
+      }
       // mute
       else if(nextStr == "m"){
         this.scanner.expect("m");

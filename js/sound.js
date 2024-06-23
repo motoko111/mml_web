@@ -2,6 +2,8 @@ const SYNTH_TYPES = ["square","triangle","sine","sawtooth"]
 const NOISE_TYPES = ["white", "brown", "pink"]
 const PULSE_TYPES = [0.5,0.25,0.125,0.75]
 const WAIT_SEC = 0
+const WAVE_FORM_SIZE = 512;
+const NES_CLOCK_COUNT = 1789772.5; // ファミコンのクロック周波数
 var WHITE_NOISE_BUFFER = null;
 var SHORT_NOISE_BUFFER = null;
 var LONG_NOISE_BUFFER = null;
@@ -32,10 +34,14 @@ class TrackSound
     }
 
     playNote(e){
-        if(this.data == null) return;
-        if(e.mute) return;
-        if(e.playbackTime < 0) return;
-        this.data.playNote(e);
+        try{
+            if(this.data == null) return;
+            if(this.data.notPlayMute() && e.mute) return;
+            if(e.playbackTime < 0) return;
+            this.data.playNote(e);
+        }catch(ec){
+            console.warn(ec);
+        }
     }
 
     stop(){
@@ -47,6 +53,11 @@ class TrackSound
         if(this.data == null) return false;
         return this.data.isActive();
     }
+
+    getWaveformValue(){
+        if(this.data == null) return null;
+        return this.data.getWaveformValue();
+    }
 }
 
 class TrackSoundData
@@ -54,6 +65,8 @@ class TrackSoundData
     constructor(){
         this.playInfos = []
         this.isActivePlay = false;
+        this.lastPlayInfo = null;
+        this.onTick = null;
     }
 
     setEnvelope(env, envParams)
@@ -82,7 +95,7 @@ class TrackSoundData
         this.isActivePlay = false;
         for(let i = 0; i < this.playInfos.length; ++i){
             if(this.playInfos[i].isActive){
-                if(this.playInfos[i].inactiveTime < getCurrentTime()){
+                if(this.playInfos[i].inactiveTime + 0.5 < getCurrentTime()){
                     if(this.playInfos[i].onended != null) this.playInfos[i].onended();
                     this.playInfos[i].isActive = false;
                 }
@@ -91,6 +104,11 @@ class TrackSoundData
                 }
             }
         }
+        if(this.onTick) this.onTick(this, dt);
+    }
+
+    notPlayMute(){
+        return true;
     }
 
     isLoaded(){
@@ -121,8 +139,9 @@ class TrackSoundData
         }
     }
 
-    setStopPlayInfoTime(info, time){
-        info.inactiveTime = time;
+    setPlayInfoTime(info, start, end){
+        info.startActiveTime = start;
+        info.inactiveTime = end;
     }
 
     getOrCreatePlayInfo(){
@@ -138,6 +157,7 @@ class TrackSoundData
             this.addPlayInfo(info);
         }
         info.isActive = true;
+        this.lastPlayInfo = info;
         //console.log("playInfos length:" + this.playInfos.length);
         return info;
     }
@@ -151,6 +171,24 @@ class TrackSoundData
         if(index != -1){
             this.playInfos.splice(index,1);
         }
+    }
+
+    getWaveformValue(){
+        if(!this.lastPlayInfo) return null;
+        if(!this.lastPlayInfo.isActive || !this.lastPlayInfo.waveform) return null;
+        let targetInfo = null;
+        let maxStartTime = -1;
+        for(let i = 0; i < this.playInfos.length; ++i){
+            if(this.playInfos[i].isActive && this.playInfos[i].startActiveTime <= getCurrentTime()){
+                if(this.playInfos[i].startActiveTime >= maxStartTime){
+                    targetInfo = this.playInfos[i];
+                    maxStartTime = this.playInfos[i].startActiveTime;
+                }
+            }
+        }
+        if(!targetInfo) return null;
+        if(!targetInfo.isActive || !targetInfo.waveform) return null;
+        return targetInfo.waveform.getValue(); // 最後に再生したデータの波形データを返す
     }
 }
 
@@ -189,8 +227,12 @@ class TrackSoundPulse extends TrackSoundData
         let info = {}
         info.osc = new Tone.PulseOscillator();
         info.env = new Tone.AmplitudeEnvelope();
-        info.osc.connect(info.env);
+        info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
+        info.osc.connect(info.waveform);
+        info.waveform.connect(info.env);
         info.env.toDestination();
+        //info.env.connect(info.waveform);
+        //info.waveform.toDestination();
         info.onended = function(){
             info.isActive = false;
         };
@@ -223,7 +265,7 @@ class TrackSoundPulse extends TrackSoundData
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.osc.stop(t1 + WAIT_SEC);
 
-        this.setStopPlayInfoTime(info, t1 + WAIT_SEC + 0.5);
+        this.setPlayInfoTime(info, t0 + WAIT_SEC, t1 + WAIT_SEC);
     }
 }
 
@@ -232,22 +274,31 @@ class TrackSoundWave extends TrackSoundData
     constructor(){
         super();
         this.defaultWaveSize = 16
+        this.waveUpdateTime = 0;
         this.oscWaves = this.createWave();
+    }
+
+    notPlayMute(){
+        return false; // waveの場合はmuteでも動かす
     }
 
     createPlayInfo(){
         let info = {}
+        info.waveUpdateTime = -9999;
+        info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
+        info.env = new Tone.AmplitudeEnvelope();
+        /*
         info.osc = new Tone.Oscillator({
             type:"custom",
             partials:this.oscWaves
         });
-        info.env = new Tone.AmplitudeEnvelope();
         // osc -> env => output
         info.osc.connect(info.env);
         info.env.toDestination();
         info.onended = function(){
             info.isActive = false;
         };
+        */
         return info;
     }
 
@@ -295,17 +346,26 @@ class TrackSoundWave extends TrackSoundData
         let info = this.getOrCreatePlayInfo();
 
         if(this.checkAndSetWave(e.wave)){
+            this.waveUpdateTime = e.playbackTime;
+            if(e.mute){
+                info.isActive = false;
+                return;
+            }
+        }
+        if(Math.abs(this.waveUpdateTime - info.waveUpdateTime) > 0.0001){
             info.osc = new Tone.Oscillator({
                 type:"custom",
                 partials:this.oscWaves
             });
-            info.osc.connect(info.env);
+            info.waveUpdateTime = this.waveUpdateTime;
+            info.osc.connect(info.waveform);
+            info.waveform.connect(info.env);
             info.env.toDestination();
             info.osc.ended = function(){
                 info.isActive = false;
             };
         }
-
+        
         this.setEnvelope(info.env, envelope);
 
         info.osc.frequency.setValueAtTime(note, t0 + WAIT_SEC);
@@ -313,7 +373,7 @@ class TrackSoundWave extends TrackSoundData
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.osc.stop(t1 + WAIT_SEC);
 
-        this.setStopPlayInfoTime(info, t1 + WAIT_SEC + 0.5);
+        this.setPlayInfoTime(info, t0 + WAIT_SEC, t1 + WAIT_SEC);
 
         //console.log(this.osc.get())
     }
@@ -403,7 +463,8 @@ class TrackSoundNoise extends TrackSoundData
         let info = {}
         info.bufferSorce = null;
         info.env = new Tone.AmplitudeEnvelope();
-        info.filter = new Tone.Filter(440, "bandpass");
+        info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
+        //info.filter = new Tone.Filter(440, "bandpass");
         let _this = this
         info.onended = function(){
             _this.stopPlayInfo(info);
@@ -414,7 +475,7 @@ class TrackSoundNoise extends TrackSoundData
     stopPlayInfo(info){
         info.isActive = false;
         if(info.bufferSorce != null){
-            info.bufferSorce.disconnect(info.env);
+            info.bufferSorce.disconnect(info.waveform);
             info.bufferSorce.stop();
         }
         info.bufferSorce = null;
@@ -440,18 +501,27 @@ class TrackSoundNoise extends TrackSoundData
             info.bufferSorce = new Tone.BufferSource(this.longBuffer);
         }
         info.bufferSorce.loop = true;
-        info.bufferSorce.connect(info.env)
-        info.env.connect(info.filter);
-        info.filter.toDestination();
+        info.bufferSorce.connect(info.waveform);
+        info.waveform.connect(info.env);
+        info.env.toDestination();
+        //info.env.connect(info.filter);
+        //info.filter.toDestination();
 
-        info.filter.frequency.setValueAtTime(note, t0 + WAIT_SEC);
-        let playbackRate = 1.0 * mtof(e.noteNumber + e.key) / 440.0;
+        //info.filter.frequency.setValueAtTime(note, t0 + WAIT_SEC);
+        let notePlayRate = Math.pow(2,(e.noteNumber - 69 + e.key) / 12); // A4からの周波数倍率
+        const sampleRate = Tone.context.sampleRate;
+        // FCのクロック周波数を4から4068(202が中央?)で割りサンプリングレートで割ることで再生倍率を決定する
+        let playbackRate = 1.0 * ((NES_CLOCK_COUNT / 202) / sampleRate) * notePlayRate;
+        let min = 1.0 * ((NES_CLOCK_COUNT / 4068) / sampleRate);
+        let max = 1.0 * ((NES_CLOCK_COUNT / 4) / sampleRate);
+        //console.log("noise: playbackRate = " + playbackRate + " ,notePlayRate=" + notePlayRate + " ,min=" + min + " ,max=" + max);
+        //let playbackRate = 1.0 * mtof(e.noteNumber + e.key) / 440.0;
         info.bufferSorce.playbackRate.setValueAtTime(playbackRate, t0 + WAIT_SEC);
         info.bufferSorce.start(t0 + WAIT_SEC);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.bufferSorce.stop(t1 + WAIT_SEC);
 
-        this.setStopPlayInfoTime(info, t1 + WAIT_SEC + 0.5);
+        this.setPlayInfoTime(info, t0 + WAIT_SEC, t1 + WAIT_SEC);
     }
 }
 
@@ -494,6 +564,7 @@ class TrackSoundSource extends TrackSoundData
         let info = {}
         info.bufferSorce = null;
         info.env = new Tone.AmplitudeEnvelope();
+        info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
         info.filter = new Tone.Filter(440, "bandpass");
         let _this = this
         info.onended = function(){
@@ -505,7 +576,7 @@ class TrackSoundSource extends TrackSoundData
     stopPlayInfo(info){
         info.isActive = false;
         if(info.bufferSorce != null){
-            info.bufferSorce.disconnect(info.env);
+            info.bufferSorce.disconnect(info.waveform);
             info.bufferSorce.stop();
         }
         info.bufferSorce = null;
@@ -532,18 +603,20 @@ class TrackSoundSource extends TrackSoundData
         }
 
         info.bufferSorce.loop = false;
-        info.bufferSorce.connect(info.env)
+        info.bufferSorce.connect(info.waveform)
+        info.waveform.connect(info.env);
         info.env.connect(info.filter);
         info.filter.toDestination();
 
         //this.filter.frequency.setValueAtTime(note, t0 + WAIT_SEC);
-        let playbackRate = 1.0 * mtof(e.noteNumber + e.key) / 440.0;
+        let notePlayRate = Math.pow(2,(e.noteNumber - 69 + e.key) / 12); // A4からの周波数倍率
+        let playbackRate = 1.0 * notePlayRate;
         info.bufferSorce.playbackRate.setValueAtTime(playbackRate, t0 + WAIT_SEC);
         info.bufferSorce.start(t0 + WAIT_SEC);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.bufferSorce.stop(t1 + WAIT_SEC);
 
-        this.setStopPlayInfoTime(info, t1 + WAIT_SEC + 0.5);
+        this.setPlayInfoTime(info, t0 + WAIT_SEC, t1 + WAIT_SEC);
     }
 }
 
@@ -564,13 +637,14 @@ class TrackSoundPlayer extends TrackSoundData
     createPlayInfo(){
         let info = {}
         info.player = new Tone.Player({
-            // url:"/assets/audio/saigetsu_lsdj.mp3",
-            url:'/assets/audio/knoc.wav',
+            url:"/assets/audio/saigetsu_lsdj.mp3",
+            // url:'/assets/audio/knoc.wav',
             autostart:false,
             onload: function(){
                 info.duration = info.player.buffer.duration; // 曲の長さ
             }
         });
+        info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
         info.filter = new Tone.Filter(440, "bandpass");
         let _this = this
         info.onended = function(){
@@ -593,11 +667,12 @@ class TrackSoundPlayer extends TrackSoundData
         var volume = (e.velocity / 128); // 倍率 // db -60:ほぼ無音 0:最大音量
 
         if(info.player.loaded){
-            info.player.toDestination();
+            info.player.connect(info.waveform);
+            info.waveform.toDestination();
             info.player.start(t0 + WAIT_SEC, Math.min(info.duration, Math.max(0, getCurrentTime() - t0)));
             info.player.volume.setValueAtTime(-16 + volume * 16, t0);
     
-            this.setStopPlayInfoTime(info, t1 + WAIT_SEC + 0.5);
+            this.setPlayInfoTime(info, t0 + WAIT_SEC, t1 + WAIT_SEC);
         }
     }
 }

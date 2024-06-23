@@ -26,29 +26,24 @@ class ScrollHelper{
         this.prevScroll = {x:0,y:0};
     }
     draw(){
-        if(this.scrollVirtical){
+        // 背景を描画
+        fill(this.backColor);
+        rect(this.x,this.y,this.w,this.h);
+        // スクロールの割合に沿った大きさを求める
 
-        }
-        else{
-            // 背景を描画
-            fill(this.backColor);
-            rect(this.x,this.y,this.w,this.h);
-            // スクロールの割合に沿った大きさを求める
-
-            // スクロールの割合に沿った開始位置を求める
-            let front_x = this.x + this.scroll.x;
-            let front_y = this.y + this.scroll.y;
-            let front_w = this.front_rect.w;
-            let front_h = this.front_rect.h;
-            // つまみ部分を描画
-            fill(this.frontColor[this.state]);
-            rect(front_x,front_y,front_w,front_h);
-            // つまみ部分の情報更新
-            this.front_rect.x = front_x;
-            this.front_rect.y = front_y;
-            this.front_rect.w = front_w;
-            this.front_rect.h = front_h;
-        }
+        // スクロールの割合に沿った開始位置を求める
+        let front_x = this.x + this.scroll.x;
+        let front_y = this.y + this.scroll.y;
+        let front_w = this.front_rect.w;
+        let front_h = this.front_rect.h;
+        // つまみ部分を描画
+        fill(this.frontColor[this.state]);
+        rect(front_x,front_y,front_w,front_h);
+        // つまみ部分の情報更新
+        this.front_rect.x = front_x;
+        this.front_rect.y = front_y;
+        this.front_rect.w = front_w;
+        this.front_rect.h = front_h;
 
         this.updateScroll(mouseX,mouseY);
     }
@@ -65,6 +60,21 @@ class ScrollHelper{
     }
     getScrollRate(){
         return this.scrollRate;
+    }
+    // 外部からスクロール位置の更新
+    setScrollRate(x,y){
+        this.scrollRate.x = Math.min(1.0,Math.max(0.0, x));
+        this.scrollRate.y = Math.min(1.0,Math.max(0.0, y));
+
+        let scroll_start_x = this.x + this.front_rect.w;
+        let scroll_end_x = this.x + this.w;
+        let scroll_max_w = scroll_end_x - scroll_start_x;
+        this.scroll.x = scroll_max_w * this.scrollRate.x;
+
+        let scroll_start_y = this.y + this.front_rect.h;
+        let scroll_end_y = this.y + this.h;
+        let scroll_max_h = scroll_end_y - scroll_start_y;
+        this.scroll.y = scroll_max_h * this.scrollRate.y;
     }
     updateScroll(x,y){
         if(this.isMouseDown()){
@@ -117,7 +127,7 @@ class ScrollHelper{
                     let scroll_start_y = this.y + this.front_rect.h;
                     let scroll_end_y = this.y + this.h;
                     let scroll_max_h = scroll_end_y - scroll_start_y;
-                    this.scroll.y = Math.min(scroll_max_h, Math.max(0,this.y - scroll_start_y + this.front_rect.h / 2));
+                    this.scroll.y = Math.min(scroll_max_h, Math.max(0,y - scroll_start_y + this.front_rect.h / 2));
                 }
                 else{
                     let scroll_start_x = this.x + this.front_rect.w;

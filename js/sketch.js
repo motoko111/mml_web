@@ -20,11 +20,13 @@ var SketchAccess = {
 let DRAW_NOTE_CANVAS_HEIGHT = 400 // ノートを描画するサイズ
 let DRAW_SCROLL_VIEW_Y = DRAW_NOTE_CANVAS_HEIGHT;
 let DRAW_KEYBOARD_WIDTH = 100 // キーボードのサイズ
-let DRAW_KEYBOARD_HEIGHT = 10 // キーボードのサイズ
+let DRAW_KEYBOARD_HEIGHT = 10 // キーボードのサイズ(白鍵)
+let DRAW_KEYBOARD_BLACK_HEIGHT = 10 // キーボードのサイズ(黒鍵)
 let DRAW_NOTE_WIDTH = 20 // ノートのサイズ
 let DRAW_NOTE_HEIGHT = 10 // ノートのサイズ
 let DRAW_SCROLL_HEIGHT = 12; // スクロール縦幅
-let DefaultNoteNumber = 69 + 12 * 1 // ノートの基準
+let DRAW_RIGHT_SCROLL_WIDTH = 12; // 右スクロール横幅
+let DefaultNoteNumber = 69 + 12 * 1 + 6 // ノートの基準
 const NOTE_NUMBER_MAX = 69 + 12 * 8;
 const NOTE_NUMBER_MIN = 69 - 12 * 4 - 5 + 12 * 4;
 let TRACK_COLORS = []
@@ -36,6 +38,8 @@ var ScetchSettings = {
 var KeyboardStatus = new Map();
 let scrollView = null;
 let scrollViewValue = 0.0;
+let rightScrollView = null;
+let rightScrollViewValue = 0.0;
 
 function setup() {
   DRAW_NOTE_CANVAS_HEIGHT = windowHeight * 0.4 - DRAW_SCROLL_HEIGHT;
@@ -55,6 +59,7 @@ function setup() {
   ]
 
   scrollView = new ScrollHelper(0, DRAW_SCROLL_VIEW_Y, canvas.width, DRAW_SCROLL_HEIGHT, false, onChangeTimeRateScroll, onChangeTimeRateScrollEnded);
+  rightScrollView = new ScrollHelper(canvas.width - DRAW_RIGHT_SCROLL_WIDTH, 0, DRAW_RIGHT_SCROLL_WIDTH, DRAW_NOTE_CANVAS_HEIGHT, true, onChangeNoteScroll, onChangeNoteScrollEnded);
 
   // gui setup
   //var gui = new dat.GUI();
@@ -68,6 +73,7 @@ function windowResized() {
   resizeCanvas(windowWidth - 20, windowHeight * 0.4);
 
   scrollView = new ScrollHelper(0, DRAW_SCROLL_VIEW_Y, canvas.width, DRAW_SCROLL_HEIGHT, false, onChangeTimeRateScroll, onChangeTimeRateScrollEnded);
+  rightScrollView = new ScrollHelper(canvas.width - DRAW_RIGHT_SCROLL_WIDTH, 0, DRAW_RIGHT_SCROLL_WIDTH, DRAW_NOTE_CANVAS_HEIGHT, true, onChangeNoteScroll, onChangeNoteScrollEnded);
 }
 
 function draw() {
@@ -160,18 +166,21 @@ function draw() {
   // 鍵盤描画
   note = DefaultNoteNumber;
   y = 0;
+  let key_h = DRAW_KEYBOARD_HEIGHT;
   for(let o = 0; o < 4; ++o){
     for(let i = 0; i < 12; ++i){
 
       if(!isBlackKeyFromNoteNumber(note)){
         // 白
-        add_y = h;
+        add_y = isBlackKeyFromNoteNumber(note - 1) ? DRAW_KEYBOARD_BLACK_HEIGHT : DRAW_KEYBOARD_HEIGHT;
         isBlackKeyboard = false;
+        key_h = DRAW_KEYBOARD_HEIGHT;
       }
       else{
         // 黒
-        add_y = h;
+        add_y = isBlackKeyFromNoteNumber(note - 1) ? DRAW_KEYBOARD_BLACK_HEIGHT : DRAW_KEYBOARD_HEIGHT;
         isBlackKeyboard = true;
+        key_h = DRAW_KEYBOARD_BLACK_HEIGHT;
       }
 
       // 鍵盤
@@ -179,29 +188,31 @@ function draw() {
       if(isEmit){
         if(isBlackKeyboard) {
           fill(TRACK_COLORS[KeyboardStatus[note]])
-          rect(x,y,w,h);
+          rect(x,y,w,key_h);
           fill(white)
         }
         else{
           fill(TRACK_COLORS[KeyboardStatus[note]])
-          rect(x,y,w,h);
+          rect(x,y,w,key_h);
           fill(black)
         }
       }
       else{
         if(isBlackKeyboard) {
           fill(black)
-          rect(x,y,w,h);
+          rect(x,y,w,key_h);
           fill(white)
         }
         else{
           fill(white);
-          rect(x,y,w,h);
+          rect(x,y,w,key_h);
           fill(black)
         }
       }
       
-      textSize(8)
+      textStyle(BOLD);
+      textSize(10);
+      fill(color(20,20,120));
       textAlign(RIGHT,CENTER);
       let noteStr = ""
       switch(ScetchSettings.DrawNoteNumberType){
@@ -215,7 +226,8 @@ function draw() {
           
         }
       }
-      text(noteStr, x + w - 4, y+h/2);
+      if(mtoc(note) !== "C") noteStr = "";
+      text(noteStr, x + w - 4, y+key_h/2);
       
       y += add_y;
       note -= 1;
@@ -225,6 +237,9 @@ function draw() {
   KeyboardStatus = {};
 
   scrollView.draw();
+  rightScrollView.draw();
+
+  updateWaveDrawers();
 
 }
 
@@ -259,14 +274,19 @@ function setVisibleTrack(index,flag){
 }
 
 function mouseWheel(event) {
-  // スクロール量を変更
-  if(event.delta > 0){
-    DefaultNoteNumber -= 4;
-    DefaultNoteNumber = Math.max(NOTE_NUMBER_MIN, DefaultNoteNumber);
-  }
-  else if(event.delta < 0){
-    DefaultNoteNumber += 4;
-    DefaultNoteNumber = Math.min(NOTE_NUMBER_MAX, DefaultNoteNumber);
+  // canvas外は操作を受け付けない
+  if(0 <= mouseX && mouseX <= canvas.width && 0 <= mouseY && mouseY <= canvas.height){
+    // スクロール量を変更
+    if(event.delta > 0){
+      DefaultNoteNumber -= 4;
+      DefaultNoteNumber = Math.max(NOTE_NUMBER_MIN, DefaultNoteNumber);
+      updateRightScroll();
+    }
+    else if(event.delta < 0){
+      DefaultNoteNumber += 4;
+      DefaultNoteNumber = Math.min(NOTE_NUMBER_MAX, DefaultNoteNumber);
+      updateRightScroll();
+    }
   }
 }
 
@@ -278,4 +298,21 @@ function onChangeTimeRateScrollEnded(x,y){
 }
 function getTimeSliderValue(){
   return scrollViewValue;
+}
+
+function onChangeNoteScroll(x,y){
+  rightScrollViewValue = y;
+  DefaultNoteNumber = Math.floor((NOTE_NUMBER_MAX - NOTE_NUMBER_MIN) * (1.0 - rightScrollViewValue)) + NOTE_NUMBER_MIN;
+  DefaultNoteNumber = Math.max(NOTE_NUMBER_MIN, DefaultNoteNumber);
+  DefaultNoteNumber = Math.min(NOTE_NUMBER_MAX, DefaultNoteNumber);
+}
+function updateRightScroll(){
+  rightScrollViewValue = 1.0 - (DefaultNoteNumber - NOTE_NUMBER_MIN) / (NOTE_NUMBER_MAX - NOTE_NUMBER_MIN);
+  rightScrollView.setScrollRate(0,rightScrollViewValue);
+}
+function onChangeNoteScrollEnded(x,y){
+  rightScrollViewValue = y;
+}
+function getNoteSliderValue(){
+  return rightScrollViewValue;
 }

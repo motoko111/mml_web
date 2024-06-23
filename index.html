@@ -13,11 +13,13 @@
   <script src="js/mml-emitter.js"></script>
   <script src="js/common.js"></script>
   <script src="js/note_analysis.js"></script>
+  <script src="js/wave_drawer.js"></script>
   <script src="js/sound.js"></script>
   <script src="js/import_file.js"></script>
   <script src="js/editor.js"></script>
   <script src="js/midi_keyboard.js"></script>
   <script src="js/scroll.js"></script>
+  <script src="js/popup.js"></script>
   <script src="js/main.js"></script>
 </head>
 <body>
@@ -64,18 +66,35 @@
     </div>
       <div>
         <div id="editor" style="margin-top: 4px; float:left; width: 70%; height: 440px"></div>
-        <div id="logEditor_0" style="margin-top: 4px; float:left; width: 30%; height: 40px"></div>
-        <div id="logEditor_1" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
-        <div id="logEditor_2" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
-        <div id="logEditor_3" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
-        <div id="logEditor_4" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
-        <div id="logEditor_5" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
-        <div id="logEditor_6" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
-        <div id="logEditor_7" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
-        <div id="logEditor_8" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
-        <div id="logEditor_9" style="margin-top: 4px;float:left; width: 30%; height: 40px"></div>
+        <div id = "editor_track_root">
+        </div>
+        <script>
+          let f = function(){
+            let root = document.getElementById("editor_track_root");
+            while( root.firstChild ){
+              root.removeChild( root.firstChild );
+            }
+            for(let i = 0;i<10;++i){
+              let track_root = document.createElement("div");
+              track_root.style = "display: flex; width: 30%;";
+              let wave = document.createElement("canvas");
+              wave.id = "wave_" + i
+              wave.style = "margin-top: 4px; width: 400px; height: 40px;"
+              let editor = document.createElement("div");
+              editor.id = "logEditor_" + i;
+              editor.style = "margin-top: 4px; float:left; width: 100%; height: 40px";
+              root.appendChild(track_root);
+              track_root.appendChild(wave);
+              track_root.appendChild(editor);
+            }
+          }
+          f();
+        </script>
       </div>
     </div>
+  </div>
+  <div id="popupContainer" class="hidden">
+    <div id="logContent"></div>
   </div>
 </body>
 </html>

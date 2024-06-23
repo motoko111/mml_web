@@ -202,4 +202,12 @@ class MMLEditor{
         editor.scrollToLine(lastRow, true, true, function() {});
         editor.gotoLine(lastRow + 1, 0, true);
     }
+    setFontSize(size){
+        this.editor.setOption("fontSize", size + "px");
+    }
+    getFontSize(){
+        let size = this.editor.getOption("fontSize");
+        size = size.replace('px', '');
+        return size;
+    }
 }

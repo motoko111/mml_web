@@ -1,8 +1,8 @@
 
 var audioContext = null;
 var mmlEmitter = null;
-var mmlEditEmitter = null
-var lastEditNote = null
+var mmlEditEmitter = null;
+var lastEditNote = null;
 
 var mmlFilePath = null;
 
@@ -13,8 +13,9 @@ var finishedInitAudio = false;
 
 var playEmitterStartTime = 0;
 
-var tracks = []
-var editTracks = []
+var tracks = [];
+var editTracks = [];
+var waveDrawers = [];
 
 function getEmitterCurrentPlayTime(){
   return getEmitterCurrentTime() - WAIT_SEC;
@@ -60,6 +61,7 @@ function saveLocalStorage(){
   let content = mmlEditor.editor.getValue();
   localStorage.setItem("work.mml", content);
   drawUpdate();
+  popup("ローカルストレージにデータを保存しました。");
   return true;
 }
 
@@ -69,6 +71,7 @@ function deleteLocalStorage(){
     mmlEditor.editor.setValue("");
     localStorage.removeItem("work.mml");
     drawUpdate();
+    popup("ローカルストレージのデータを削除しました。");
     return true;
   }
   else{
@@ -123,7 +126,6 @@ function exportFile(){
 }
 
 function loadFile(txt){
-  var mmlFilePath = txt;
   mmlEditor.editor.setValue(txt, -1);  // -1はカーソルをファイルの先頭に戻す
   drawUpdate();
 }
@@ -269,8 +271,41 @@ function createTrackSounds(){
     new TrackSound(new TrackSoundSource()),
     new TrackSound(new TrackSoundSource()),
     new TrackSound(new TrackSoundSource()),
+    //new TrackSound(new TrackSoundPlayer()),
+    new TrackSound(new TrackSoundSource()),
+    new TrackSound(new TrackSoundSource()),
     new TrackSound(new TrackSoundSource()),
   ]
+}
+
+function createWaveDrawers(){
+  let drawers = []
+  for(let i = 0; i < tracks.length; ++i){
+    let canvas = document.getElementById("wave_" + i);
+    if(canvas){
+      let drawer = new WaveDrawer(canvas);
+      drawers.push(drawer);
+    }
+  }
+  return drawers;
+}
+
+function updateWaveDrawers(){
+  if(isActiveTracks(editTracks)){
+    for(let i = 0; i < waveDrawers.length; ++i){
+      let drawer = waveDrawers[i];
+      let track = editTracks[i];
+      drawer.setWaveData(track.getWaveformValue());
+      drawer.draw();
+    }
+  }else{
+    for(let i = 0; i < waveDrawers.length; ++i){
+      let drawer = waveDrawers[i];
+      let track = tracks[i];
+      drawer.setWaveData(track.getWaveformValue());
+      drawer.draw();
+    }
+  }
 }
 
 function playNote(e){
@@ -307,6 +342,7 @@ function setInputMidi(flag){
   }
   
 }
+
 
 function initDocument(){
   document.getElementById('fileInput').addEventListener('change', function(event) {
@@ -368,7 +404,7 @@ var setupAudioAsync = async (callback) => {
     await new Promise(resolve => setTimeout(resolve, 100))
   }
 
-  setupMidiKeyboard();
+  waveDrawers = createWaveDrawers();
 
   finishedInitAudio = true;
 
