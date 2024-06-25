@@ -28,7 +28,7 @@ let DRAW_SCROLL_HEIGHT = 12; // スクロール縦幅
 let DRAW_RIGHT_SCROLL_WIDTH = 12; // 右スクロール横幅
 let DefaultNoteNumber = 69 + 12 * 1 + 6 // ノートの基準
 const NOTE_NUMBER_MAX = 69 + 12 * 8;
-const NOTE_NUMBER_MIN = 69 - 12 * 4 - 5 + 12 * 4;
+const NOTE_NUMBER_MIN = 69 - 12 * 5 - 5 + 12 * 4;
 let TRACK_COLORS = []
 
 var TrackVisibleSettings = [true,true,true,true,true,true,true,true,true,true]
@@ -60,6 +60,17 @@ function setup() {
 
   scrollView = new ScrollHelper(0, DRAW_SCROLL_VIEW_Y, canvas.width, DRAW_SCROLL_HEIGHT, false, onChangeTimeRateScroll, onChangeTimeRateScrollEnded);
   rightScrollView = new ScrollHelper(canvas.width - DRAW_RIGHT_SCROLL_WIDTH, 0, DRAW_RIGHT_SCROLL_WIDTH, DRAW_NOTE_CANVAS_HEIGHT, true, onChangeNoteScroll, onChangeNoteScrollEnded);
+  updateRightScroll();
+
+  let isRunning = false;
+  scrollView.on("press", () => {
+    isRunning = isPlayMainEmitter();
+    stop();
+  });
+  scrollView.on("scrollEnded", (x,y)=>{
+    if(isRunning) start();
+    isRunning = false;
+  });
 
   // gui setup
   //var gui = new dat.GUI();
@@ -92,8 +103,8 @@ function draw() {
   let white = color(255, 255, 255);
   let black = color(0,0,0);
   let emit = color(0,0,255);
-  let note_back_color = color(200,200,200)
-  let note_back_black_color = color(150,150,150)
+  let note_back_color = color(100,100,100)
+  let note_back_black_color = color(50,50,50)
   let isBlackKeyboard = false;
 
   note = DefaultNoteNumber;
@@ -133,34 +144,12 @@ function draw() {
   }
 
   // ノート描画
-  if(G_NoteAnalysis != null){
-    // console.log("test" + offsetTime);
-    let tracks = G_NoteAnalysis.tracks;
-    for(let i = 0; i < tracks.length; ++i){
-      if(TrackVisibleSettings[i] == false) continue;
-      let notes = tracks[i].notes;
-      for(let j = 0; j < notes.length; ++j){
-        let note = notes[j];
-        let baseTime =  60 / note.tempo * (4 / 8); // 1ノート幅の時間
-        let noteTime = note.playbackTime - note.startTime;
-        if(noteTime < offsetTime - 2.0) continue;
-        let duration = note.duration /* 音符の長さ */ * (note.quantize /* 音の長さ倍率 */ / 100);
-        let noteLength = note.length;
-        let length8 = noteLength * 2; // 8分音符が1マスの大きさ
-        if(note.slur){
-          note.slur.forEach(s => {
-            duration += s.duration;
-            length8 += (s.duration / baseTime);
-          });
-        }
-        // 音が鳴っているか
-        if(noteTime <= offsetTime && offsetTime <= noteTime + duration ) {
-          KeyboardStatus[note.noteNumber + note.key] = i
-        }
-        let right = drawNote(note.trackNumber, offsetTime, noteTime , note.noteNumber + note.key, length8, baseTime);
-        if(right >= canvas.width) break;
-      }
-    }
+  let isDrawAnalysis = true;
+  if(isPlayEditEmitter()){
+    isDrawAnalysis = !drawAnalysis(G_EditNoteAnalysis, offsetTime);
+  }
+  if(isDrawAnalysis){
+    drawAnalysis(G_NoteAnalysis, offsetTime);
   }
   
   // 鍵盤描画
@@ -233,6 +222,11 @@ function draw() {
       note -= 1;
     }
   }
+
+  // メイン演奏中はスクロール自動移動
+  if(isPlayMainEmitter() && !scrollView.isControll()){
+    setTimeSliderValue(getEmitterPlayTimeRate());
+  }
   
   KeyboardStatus = {};
 
@@ -241,6 +235,38 @@ function draw() {
 
   updateWaveDrawers();
 
+}
+
+function drawAnalysis(analysis, offsetTime){
+  if(!analysis) return false;
+  let tracks = analysis.tracks;
+  if(tracks.length == 0) return false;
+  for(let i = 0; i < tracks.length; ++i){
+    if(TrackVisibleSettings[i] == false) continue;
+    let notes = tracks[i].notes;
+    for(let j = 0; j < notes.length; ++j){
+      let note = notes[j];
+      let baseTime =  60 / note.tempo * (4 / 8); // 1ノート幅の時間
+      let noteTime = note.playbackTime - note.startTime;
+      if(noteTime < offsetTime - 2.0) continue;
+      let duration = note.duration /* 音符の長さ */ * (note.quantize /* 音の長さ倍率 */ / 100);
+      let noteLength = note.length;
+      let length8 = noteLength * 2; // 8分音符が1マスの大きさ
+      if(note.slur){
+        note.slur.forEach(s => {
+          duration += s.duration;
+          length8 += (s.duration / baseTime);
+        });
+      }
+      // 音が鳴っているか
+      if(noteTime <= offsetTime && offsetTime <= noteTime + duration ) {
+        KeyboardStatus[note.noteNumber + note.key] = i
+      }
+      let right = drawNote(note.trackNumber, offsetTime, noteTime , note.noteNumber + note.key, length8, baseTime);
+      if(right >= canvas.width) break;
+    }
+  }
+  return true;
 }
 
 function getNoteX(rate){
@@ -298,6 +324,10 @@ function onChangeTimeRateScrollEnded(x,y){
 }
 function getTimeSliderValue(){
   return scrollViewValue;
+}
+function setTimeSliderValue(value){
+  scrollViewValue = value;
+  scrollView.setScrollRate(scrollViewValue, 0);
 }
 
 function onChangeNoteScroll(x,y){

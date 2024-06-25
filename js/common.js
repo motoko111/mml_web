@@ -1,6 +1,7 @@
 
 const SOUND_MAP = ['A','A#','B','C','C#','D','D#','E','F','F#','G','G#'];
 const SOUND_MAP_LOWER = ['a','a+','b','c','c+','d','d+','e','f','f+','g','g+'];
+const KEYBOARD_SIZE_MAP = [];
 
 function mtof(noteNumber) {
     return 440 * Math.pow(2, (noteNumber - 69) / 12);

@@ -1,5 +1,5 @@
 
-const REGEX_NOTE_STR = new RegExp("([a-z]|[A-Z]|\\+|\\-)+");
+const REGEX_NOTE_STR = new RegExp("([cdefgab]|[CDEFGAB]|\\+|\\-)+");
 const REGEX_NUMBER_STR = new RegExp("([0-9])+");
 const REGEX_DOT_STR = new RegExp("(\\.)+");
 const REGEX_TAI_STR = new RegExp("(\\^)+");
@@ -12,12 +12,33 @@ class MMLEditor{
         this.lastEditNote = null
         this.playEditNoteFunc = null
         this.enableEditPlay = false;
+        this.lastPlayOctave = 4;
     }
     clear(){
         if(this.editor != null) return
         this.editor.setValue("");
     }
     insertNoteNumber(noteNumber, length){
+        // 現在トラックを解析してオクターブを割り出す
+        let trackMML = this.getStringBeforeCursorToSemicolon();
+        let analysis = analysisEditMML(trackMML);
+        let lastNote = analysis.getLastNote();
+        if(lastNote) {
+            let lastOctave = mtoo(lastNote.noteNumber);
+            let oct = mtoo(noteNumber);
+            if(oct > lastOctave){
+                let diff = Math.abs(oct - lastOctave);
+                for(let i = 0; i < diff; ++i){
+                    this.editor.insert(">");
+                }
+            }
+            if(oct < lastOctave){
+                let diff = Math.abs(oct - lastOctave);
+                for(let i = 0; i < diff; ++i){
+                    this.editor.insert("<");
+                }
+            }
+        }
         if(!length) {
             this.editor.insert(mtoc(noteNumber, true));
         }
@@ -209,5 +230,8 @@ class MMLEditor{
         let size = this.editor.getOption("fontSize");
         size = size.replace('px', '');
         return size;
+    }
+    setLastEditorPlayNote(e){
+        this.lastPlayOctave = e.octave;
     }
 }

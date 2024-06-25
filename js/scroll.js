@@ -1,14 +1,15 @@
 class ScrollHelper{
     constructor(x,y,w,h,virtical,onScroll,onScrollEnded){
+        this.events = {};
         this.x = x;
         this.y = y;
         this.w = w;
         this.h = h;
-        this.backColor = color(88, 88, 88);
+        this.backColor = color(44, 44, 44);
         this.frontColor = {
-            "idle":color(200, 200, 200),
-            "hover":color(220, 220, 220),
-            "press":color(255, 255, 255),
+            "idle":color(150, 150, 200),
+            "hover":color(180, 180, 220),
+            "press":color(220, 220, 255),
         }
         this.scrollVirtical = virtical;
         if(this.scrollVirtical){
@@ -20,10 +21,26 @@ class ScrollHelper{
         this.state = "idle";
         this.scroll = {x:0,y:0};
         this.scrollRate = {x:0,y:0};
-        this.onScroll = onScroll;
-        this.onScrollEnded = onScrollEnded;
+        this.on("scroll", onScroll)
+        this.on("scrollEnded", onScrollEnded)
         this.dragStart = {x:0,y:0};
         this.prevScroll = {x:0,y:0};
+
+    }
+    on(event, func){
+        if(!this.events[event]) this.events[event] = [];
+        this.events[event].push(func);
+    }
+    emit(event, ...args){
+        if(this.events[event]){
+            let list = this.events[event];
+            for(let i = 0; i < list.length; ++i){
+                list[i](...args);
+            }
+        }
+    }
+    clearEvents(){
+        this.events = {}
     }
     draw(){
         // 背景を描画
@@ -54,6 +71,9 @@ class ScrollHelper{
     checkHitFront(x,y){
         return this.front_rect.x <= x && x <= this.front_rect.x + this.front_rect.w 
         && this.front_rect.y <= y && y <= this.front_rect.y + this.front_rect.h;
+    }
+    isControll(){
+        return this.state == 'press';
     }
     isMouseDown(){
         return mouseIsPressed;
@@ -105,7 +125,7 @@ class ScrollHelper{
         else{
             if(this.state == "press")
             {
-                if(this.onScrollEnded) this.onScrollEnded(this.scrollRate.x, this.scrollRate.y); 
+                this._onScrollEnded(this.scrollRate.x, this.scrollRate.y);
             }
             if(this.checkHitFront(x,y)){
                 this.state = "hover";
@@ -138,6 +158,8 @@ class ScrollHelper{
             }
             this.prevScroll.x = this.scroll.x;
             this.prevScroll.y = this.scroll.y;
+            
+            this._onPress();
         }
         this.state = "press";
         // 可動域
@@ -157,6 +179,15 @@ class ScrollHelper{
             this.scroll.x = Math.min(scroll_max_w, Math.max(0,this.scroll.x));
             this.scrollRate.x = this.scroll.x / scroll_max_w;
         }
-        if(this.onScroll) this.onScroll(this.scrollRate.x, this.scrollRate.y);
+        this._onScroll(this.scrollRate.x, this.scrollRate.y);
+    }
+    _onPress(){
+        this.emit("press");
+    }
+    _onScroll(x,y){
+        this.emit("scroll", x, y);
+    }
+    _onScrollEnded(x,y){
+        this.emit("scrollEnded", x, y);
     }
 }

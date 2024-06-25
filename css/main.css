@@ -50,6 +50,9 @@ body{
 .button-stop {
     background-color: rgb(124, 74, 74);
 }
+.button-rewind {
+    background-color: rgb(84, 82, 117);
+}
 
 .button img {
     width: auto;
@@ -73,6 +76,9 @@ body{
 .button-stop:hover {
     background-color: rgb(214, 31, 31);
 }
+.button-rewind:hover {
+    background-color: rgb(27, 131, 201);
+}
 
 .button:active {
     background-color: rgb(68, 115, 243);
@@ -88,6 +94,9 @@ body{
 }
 .button-stop:active {
     background-color: rgb(104, 15, 15);
+}
+.button-rewind:active {
+    background-color: rgb(27, 21, 107);
 }
 
 .checkbox-root {

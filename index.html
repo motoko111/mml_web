@@ -39,8 +39,9 @@
       <button class= "button" id="button" onclick="exportFile();"><img src="assets/icon/export.png"/><span class="button-label">export</span></button>
       <button class= "button" id="button" onclick="document.getElementById('fileInput').click();"><img src="assets/icon/folder.png"/><span class="button-label">import</span></button>
       <input type="file" id="fileInput" style="display: none;"/>
-      <button class= "button button-play" id="button" onclick="start();"><img style="margin-right:0px;" src="assets/icon/play.png"/></button>
-      <button class= "button button-stop" id="button" onclick="stop();"><img style="margin-right:0px;" src="assets/icon/stop.png"/></button>
+      <button class= "button button-play" id="playButton" onclick="start();"><img style="margin-right:0px;" src="assets/icon/play.png"/></button>
+      <button class= "button button-stop hidden" id="stopButton" onclick="stop();"><img style="margin-right:0px;" src="assets/icon/pause.png"/></button>
+      <button class= "button button-rewind" id="button" onclick="rewind();"><img style="margin-right:0px;" src="assets/icon/rewind.png"/></button>
       <span class="checkbox-root">
       <span class="button-label">0</span><input type="checkbox" id="track_enable_0" onclick="setVisibleTrack(0,this.checked);" checked />
       <span class="button-label">1</span><input type="checkbox" id="track_enable_1" onclick="setVisibleTrack(1,this.checked);" checked />

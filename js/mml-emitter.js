@@ -1202,6 +1202,7 @@ var MMLIterator = (function () {
       this._currentLength = this._currentLength + length128; // 少数を使わないように128分音符を基準の長さにする
 
       let slur = []
+      let slurDuration = 0;
       // 次の情報を見て次がスラーだったらスラー用のデータを作る
       for(; this.hasNext();){
         let c = this._forward(true);
@@ -1220,6 +1221,7 @@ var MMLIterator = (function () {
 					duration: len,
 					noteNumber: noteNumber_2
         });
+        slurDuration += len;
         this._processedTime = this._processedTime + len;
         this._currentLength = this._currentLength + length128_2; // 少数を使わないように128分音符を基準の長さにする
       }
@@ -1239,6 +1241,7 @@ var MMLIterator = (function () {
           mute:mute,
           wave:wave,
           slur:slur,
+          slurDuration:slurDuration,
           key:key
           };
       }));
