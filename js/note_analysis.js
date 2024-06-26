@@ -3,6 +3,7 @@ class NoteAnalysis {
     constructor(){
       this.tracks = []
       this.lastNote = null;
+      this.lastInfo = null;
     }
     add(startTime, e){
       while(this.tracks.length <= e.trackNumber) this.tracks.push(new NoteAnalysisTrack(e.trackNumber));
@@ -11,6 +12,7 @@ class NoteAnalysis {
     clear(){
       this.tracks.splice(0);
       this.lastNote = null;
+      this.lastInfo = null;
     }
     getDuration(){
       let val = 0;
@@ -21,6 +23,15 @@ class NoteAnalysis {
     }
     getLastNote(){
       return this.lastNote;
+    }
+    getLastOctave(){
+      if(this.lastNote){
+        return mtoo(this.lastNote.noteNumber);
+      }
+      if(this.lastInfo){
+        return this.lastInfo.octave ? this.lastInfo.octave : 0;
+      }
+      return 0;
     }
     analysis(mml, config){
       let _this = this;
@@ -41,6 +52,10 @@ class NoteAnalysis {
         // console.log("demo NOTE: " + JSON.stringify(e));
       });
       emitter.on("end:all", function(e) {
+        // 1つもノートがなかったとき
+        if(!_this.lastNote){
+          // todo: 
+        }
         console.log("demo END : " + JSON.stringify(e));
       });
       emitter.start();

@@ -22,21 +22,18 @@ class MMLEditor{
         // 現在トラックを解析してオクターブを割り出す
         let trackMML = this.getStringBeforeCursorToSemicolon();
         let analysis = analysisEditMML(trackMML);
-        let lastNote = analysis.getLastNote();
-        if(lastNote) {
-            let lastOctave = mtoo(lastNote.noteNumber);
-            let oct = mtoo(noteNumber);
-            if(oct > lastOctave){
-                let diff = Math.abs(oct - lastOctave);
-                for(let i = 0; i < diff; ++i){
-                    this.editor.insert(">");
-                }
+        let lastOctave = analysis.getLastOctave();
+        let oct = mtoo(noteNumber);
+        if(oct > lastOctave){
+            let diff = Math.abs(oct - lastOctave);
+            for(let i = 0; i < diff; ++i){
+                this.editor.insert(">");
             }
-            if(oct < lastOctave){
-                let diff = Math.abs(oct - lastOctave);
-                for(let i = 0; i < diff; ++i){
-                    this.editor.insert("<");
-                }
+        }
+        if(oct < lastOctave){
+            let diff = Math.abs(oct - lastOctave);
+            for(let i = 0; i < diff; ++i){
+                this.editor.insert("<");
             }
         }
         if(!length) {

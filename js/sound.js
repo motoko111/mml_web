@@ -299,6 +299,13 @@ class TrackSoundWave extends TrackSoundData
         info.waveBuffer = this.createWaveBuffer(1);
         info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
         info.env = new Tone.AmplitudeEnvelope();
+        // ちょうどよく割り切れる数を探す
+        let div = 2;
+        for(let i = 2; i <= 20; ++i){
+            if(Tone.context.sampleRate % i == 0) div = i;
+        }
+        // console.log("calc countPerHz div:" + div);
+        info.countPerHz = Tone.context.sampleRate / div; // 1Hzあたりのサンプリング数
         return info;
     }
 
@@ -361,11 +368,16 @@ class TrackSoundWave extends TrackSoundData
             info.waveUpdateTime = this.waveUpdateTime;
             
             let data = info.waveBuffer.getChannelData(0);
-            for (let i = 0; i < data.length; i++) {
-                let rate = ((i + 1) / data.length);
-                let index = Math.floor(this.oscWaves.length * rate + 0.5);
-                index = Math.max(0, Math.min(this.oscWaves.length-1, index));
-                data[i] = this.oscWaves[index];
+            let n = 0;
+            while(n < data.length){
+                for (let i = 0; i < info.countPerHz; i++) {
+                    let rate = ((i + 1) / info.countPerHz);
+                    let index = Math.floor(this.oscWaves.length * rate + 0.5);
+                    index = Math.max(0, Math.min(this.oscWaves.length-1, index));
+                    data[n] = this.oscWaves[index];
+                    n++;
+                    if(n >= data.length) break;
+                }
             }
             // console.log(info.waveBuffer.getChannelData(0));
         }
@@ -380,12 +392,12 @@ class TrackSoundWave extends TrackSoundData
         this.setEnvelope(info.env, envelope);
 
         let notePlayRate = Math.pow(2,(e.noteNumber - 69 + e.key) / 12); // A4からの周波数倍率
-        // samplerate / info.waveBuffer.getChannelData(0).length = デフォルトの周波数
+        // samplerate / 1Hzのサンプル数 = デフォルトの周波数
         // これを440Hzにしたい デフォルトの周波数 * x = 440; x = デフォルトの周波数 / 440
-        let defaultHz = Tone.context.sampleRate / info.waveBuffer.getChannelData(0).length;
+        let defaultHz = Tone.context.sampleRate / info.countPerHz;
         let defaultHzPlayRate = 440.0 / defaultHz;
         let playbackRate = 1.0 * notePlayRate * defaultHzPlayRate;
-        //console.log(' defaultHz:' + defaultHz + " defaultHzPlayRate:" + defaultHzPlayRate + " playbackRate:" + playbackRate + " notePlayRate:" + notePlayRate)
+        // console.log(' defaultHz:' + defaultHz + " defaultHzPlayRate:" + defaultHzPlayRate + " playbackRate:" + playbackRate + " notePlayRate:" + notePlayRate)
         info.bufferSorce.playbackRate.setValueAtTime(playbackRate, t0 + WAIT_SEC);
         info.bufferSorce.start(t0 + WAIT_SEC);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
