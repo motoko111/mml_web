@@ -52,10 +52,6 @@ class NoteAnalysis {
         // console.log("demo NOTE: " + JSON.stringify(e));
       });
       emitter.on("end:all", function(e) {
-        // 1つもノートがなかったとき
-        if(!_this.lastNote){
-          // todo: 
-        }
         console.log("demo END : " + JSON.stringify(e));
       });
       emitter.start();

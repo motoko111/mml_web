@@ -40,6 +40,8 @@ let scrollView = null;
 let scrollViewValue = 0.0;
 let rightScrollView = null;
 let rightScrollViewValue = 0.0;
+let repeatStartLineView = null;
+let repeatEndLineView = null;
 
 function setup() {
   DRAW_NOTE_CANVAS_HEIGHT = windowHeight * 0.4 - DRAW_SCROLL_HEIGHT;
@@ -58,19 +60,8 @@ function setup() {
     color(255, 255, 255),
   ]
 
-  scrollView = new ScrollHelper(0, DRAW_SCROLL_VIEW_Y, canvas.width, DRAW_SCROLL_HEIGHT, false, onChangeTimeRateScroll, onChangeTimeRateScrollEnded);
-  rightScrollView = new ScrollHelper(canvas.width - DRAW_RIGHT_SCROLL_WIDTH, 0, DRAW_RIGHT_SCROLL_WIDTH, DRAW_NOTE_CANVAS_HEIGHT, true, onChangeNoteScroll, onChangeNoteScrollEnded);
-  updateRightScroll();
-
-  let isRunning = false;
-  scrollView.on("press", () => {
-    isRunning = isPlayMainEmitter();
-    stop();
-  });
-  scrollView.on("scrollEnded", (x,y)=>{
-    if(isRunning) start();
-    isRunning = false;
-  });
+  initScrollView();
+  initNoteLineView();
 
   // gui setup
   //var gui = new dat.GUI();
@@ -83,8 +74,8 @@ function windowResized() {
   DRAW_SCROLL_VIEW_Y = DRAW_NOTE_CANVAS_HEIGHT;
   resizeCanvas(windowWidth - 20, windowHeight * 0.4);
 
-  scrollView = new ScrollHelper(0, DRAW_SCROLL_VIEW_Y, canvas.width, DRAW_SCROLL_HEIGHT, false, onChangeTimeRateScroll, onChangeTimeRateScrollEnded);
-  rightScrollView = new ScrollHelper(canvas.width - DRAW_RIGHT_SCROLL_WIDTH, 0, DRAW_RIGHT_SCROLL_WIDTH, DRAW_NOTE_CANVAS_HEIGHT, true, onChangeNoteScroll, onChangeNoteScrollEnded);
+  initScrollView();
+  initNoteLineView();
 }
 
 function draw() {
@@ -107,6 +98,7 @@ function draw() {
   let note_back_black_color = color(50,50,50)
   let isBlackKeyboard = false;
 
+  stroke(1);
   note = DefaultNoteNumber;
   y = 0;
   for(let o = 0; o < 4; ++o){
@@ -151,8 +143,12 @@ function draw() {
   if(isDrawAnalysis){
     drawAnalysis(G_NoteAnalysis, offsetTime);
   }
+
+  // リピート位置描画
+  drawNoteLineView();
   
   // 鍵盤描画
+  stroke(1);
   note = DefaultNoteNumber;
   y = 0;
   let key_h = DRAW_KEYBOARD_HEIGHT;
@@ -199,6 +195,7 @@ function draw() {
         }
       }
       
+      noStroke();
       textStyle(BOLD);
       textSize(10);
       fill(color(20,20,120));
@@ -217,6 +214,7 @@ function draw() {
       }
       if(mtoc(note) !== "C") noteStr = "";
       text(noteStr, x + w - 4, y+key_h/2);
+      stroke(1);
       
       y += add_y;
       note -= 1;
@@ -225,6 +223,7 @@ function draw() {
 
   // メイン演奏中はスクロール自動移動
   if(isPlayMainEmitter() && !scrollView.isControll()){
+    // console.log("scrollView.isControll() = " + scrollView.isControll());
     setTimeSliderValue(getEmitterPlayTimeRate());
   }
   
@@ -314,6 +313,32 @@ function mouseWheel(event) {
       updateRightScroll();
     }
   }
+}
+
+function initScrollView(){
+  scrollView = new ScrollHelper(0, DRAW_SCROLL_VIEW_Y, canvas.width, DRAW_SCROLL_HEIGHT, false, onChangeTimeRateScroll, onChangeTimeRateScrollEnded);
+  rightScrollView = new ScrollHelper(canvas.width - DRAW_RIGHT_SCROLL_WIDTH, 0, DRAW_RIGHT_SCROLL_WIDTH, DRAW_NOTE_CANVAS_HEIGHT, true, onChangeNoteScroll, onChangeNoteScrollEnded);
+  updateRightScroll();
+
+  let isRunning = false;
+  scrollView.on("press", () => {
+    isRunning = isPlayMainEmitter();
+    stop();
+  });
+  scrollView.on("scrollEnded", (x,y)=>{
+    if(isRunning) start();
+    isRunning = false;
+  });
+}
+
+function initNoteLineView(){
+  //repeatStartLineView = new NoteLine(1,DRAW_NOTE_CANVAS_HEIGHT);
+  //repeatEndLineView = new NoteLine(1,DRAW_NOTE_CANVAS_HEIGHT);
+}
+
+function drawNoteLineView(){
+  //repeatStartLineView.draw();
+  //repeatEndLineView.draw();
 }
 
 function onChangeTimeRateScroll(x,y){

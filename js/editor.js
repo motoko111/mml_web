@@ -22,6 +22,11 @@ class MMLEditor{
         // 現在トラックを解析してオクターブを割り出す
         let trackMML = this.getStringBeforeCursorToSemicolon();
         let analysis = analysisEditMML(trackMML);
+        let lastNote = analysis.getLastNote();
+        // 1音もなかった場合適当に追加して解析する
+        if(!lastNote){
+            analysis = analysisEditMML(trackMML + "c");
+        }
         let lastOctave = analysis.getLastOctave();
         let oct = mtoo(noteNumber);
         if(oct > lastOctave){

@@ -938,6 +938,7 @@ var IntervalIterator = (function () {
   }, {
     key: "_nextIterItem",
     value: function _nextIterItem(t0) {
+      
       if (t0 <= this._iterItem.time) {
         return null;
       }
@@ -2356,7 +2357,6 @@ var SeqEmitter = (function (_EventEmitter) {
 
       this._tracks.forEach(function (iter) {
         var iterItem = iter.next();
-
         _this4._emitEvent(iterItem.value, iter.trackNumber);
       });
 

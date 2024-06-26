@@ -246,12 +246,10 @@ function editPlay(mml, playLine){
   
       var config = { context: Tone.context };
       let lastNote = null;
-      let notMuteNotes = []
+      let notes = []
       mmlEditEmitter = new MMLEmitter(mml, config);
       mmlEditEmitter.on("note", function(e) {
-        if(!e.mute){
-          notMuteNotes.push(JSON.parse(JSON.stringify(e)))
-        }
+        notes.push(JSON.parse(JSON.stringify(e)))
         lastNote = JSON.parse(JSON.stringify(e))
       });
       mmlEditEmitter.on("end:all", function(e) {
@@ -261,7 +259,11 @@ function editPlay(mml, playLine){
           let firstPlaybackTime = -1;
           let firstLength = -1;
           playEditEmitterStartTime = Tone.context.currentTime
-          notMuteNotes.forEach(note => {
+          notes.forEach(note => {
+            if(note.mute){
+              playEditNote(note);
+              return;
+            }
             if(firstPlaybackTime == -1){
               firstPlaybackTime = note.playbackTime;
               firstLength = note.currentLength;
@@ -279,6 +281,12 @@ function editPlay(mml, playLine){
         }
         else{
           if(lastNote != null){
+            notes.forEach(note => {
+              if(note == lastNote) return;
+              note.mute = true;
+              playEditNote(note);
+            });
+
             G_EditNoteAnalysis.clear();
             playEditEmitterStartTime = Tone.context.currentTime
             lastNote.mute = false;

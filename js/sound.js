@@ -36,7 +36,10 @@ class TrackSound
     playNote(e){
         try{
             if(this.data == null) return;
-            if(this.data.notPlayMute() && e.mute) return;
+            if(this.data.notPlayMute() && e.mute) {
+                // console.log("notPlayMute mute " + mtoco(e.noteNumber));
+                return;
+            }
             if(e.playbackTime < 0) return;
             this.data.playNote(e);
         }catch(ec){
@@ -358,10 +361,10 @@ class TrackSoundWave extends TrackSoundData
 
         if(this.checkAndSetWave(e.wave)){
             this.waveUpdateTime = e.playbackTime;
-            if(e.mute){
-                info.isActive = false;
-                return;
-            }
+        }
+        if(e.mute){
+            info.isActive = false;
+            return;
         }
 
         if(Math.abs(this.waveUpdateTime - info.waveUpdateTime) > 0.0001){
