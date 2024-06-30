@@ -193,7 +193,7 @@ class TrackSoundData
             if(this.playInfos[i].isActive){
                 if(this.playInfos[i].inactiveTime + 0.1 < getCurrentTime()){
                     if(this.playInfos[i].onended != null) this.playInfos[i].onended();
-                    this.playInfos[i].isActive = false;
+                    this.stopPlayInfo(this.playInfos[i]);
                 }
                 else{
                     this.isActivePlay = true;
@@ -231,13 +231,15 @@ class TrackSoundData
     }
 
     stopPlayInfo(info){
+        console.log("stopPlayInfo default");
         info.isActive = false;
     }
 
     stopPlayInfoAll(){
         for(let i = 0; i < this.playInfos.length; ++i){
             if(this.playInfos[i].isActive){
-                this.stopPlayInfo(this.playInfos[i])
+                console.log("stopPlayInfo=" + i);
+                this.stopPlayInfo(this.playInfos[i]);
             }
         }
     }
@@ -265,6 +267,7 @@ class TrackSoundData
         }
         if(info == null){
             info = this.createPlayInfo();
+            info.playCount = 0;
             this.addPlayInfo(info);
         }
         info.isActive = true;
@@ -330,7 +333,10 @@ class TrackSoundPulse extends TrackSoundData
 
     stopPlayInfo(info){
         info.isActive = false;
+        info.playCount = Math.max(0,  info.playCount - 1);
         info.osc.stop();
+        console.log("stopPlayInfo osc stop");
+        console.log(info.osc);
     }
 
     playNote(e){
@@ -409,8 +415,8 @@ class TrackSoundWave extends TrackSoundData
 
     stopPlayInfo(info){
         if(info.bufferSorce != null){
+            info.bufferSorce.stop();
             info.bufferSorce.disconnect(info.baseConnectNode);
-            info.bufferSorce.dispose();
         }
         info.isActive = false;
         info.bufferSorce = null;
@@ -610,8 +616,8 @@ class TrackSoundNoise extends TrackSoundData
 
     stopPlayInfo(info){
         if(info.bufferSorce != null){
+            info.bufferSorce.stop();
             info.bufferSorce.disconnect(info.baseConnectNode);
-            if(info.isActive) info.bufferSorce.dispose();
         }
         info.isActive = false;
         info.bufferSorce = null;
@@ -664,6 +670,7 @@ class TrackSoundNoise extends TrackSoundData
         info.bufferSorce.start(t0 + WAIT_SEC);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.bufferSorce.stop(t1 + WAIT_SEC);
+        info.playCount++;
 
         this.setPlayInfoTime(info, t0 + WAIT_SEC, t1 + WAIT_SEC);
     }
@@ -691,8 +698,8 @@ class TrackSoundSource extends TrackSoundData
 
     stopPlayInfo(info){
         if(info.bufferSorce != null){
+            info.bufferSorce.stop();
             info.bufferSorce.disconnect(info.baseConnectNode);
-            if(info.isActive) info.bufferSorce.dispose();
         }
         info.isActive = false;
         info.bufferSorce = null;

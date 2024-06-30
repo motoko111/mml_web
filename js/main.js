@@ -193,10 +193,12 @@ function repeatRewind(forcePlay){
 }
 
 function stop(){
+  
+  stopTracks(editTracks);
+
   if(mmlEmitter) {
     mmlEditor.resetLogAll();
     stopTracks(tracks);
-    stopTracks(editTracks);
     if(mmlEmitter != null){
       mmlEmitter.stop();
     }
@@ -354,6 +356,7 @@ function editPlay(mml, playLine){
             let dt = (note.playbackTime - firstPlaybackTime);
             note.playbackTime = Tone.context.currentTime + dt + lag;
             note.currentLength = note.currentLength - firstLength;
+            //note.chord = true;
             //console.log(note)
             G_EditNoteAnalysis.add(playEditEmitterStartTime, JSON.parse(JSON.stringify(note)));
             mmlEditor.setLastEditorPlayNote(JSON.parse(JSON.stringify(note)));
@@ -374,6 +377,7 @@ function editPlay(mml, playLine){
             lastNote.mute = false;
             lastNote.playbackTime = Tone.context.currentTime;
             lastNote.currentLength = 0;
+            //lastNote.chord = true;
             //console.log(lastNote)
             G_EditNoteAnalysis.add(playEditEmitterStartTime, JSON.parse(JSON.stringify(lastNote)));
             mmlEditor.setLastEditorPlayNote(JSON.parse(JSON.stringify(lastNote)));
@@ -412,12 +416,14 @@ function getNoteAnalysis(){
 }
 
 function resetTracks(_tracks){
+  if(!_tracks || _tracks.length < 1) return;
   for(let i = 0; i < _tracks.length; ++i){
     _tracks[i].reset();
   }
 }
 
 function stopTracks(_tracks){
+  if(!_tracks || _tracks.length < 1) return;
   for(let i = 0; i < _tracks.length; ++i){
     _tracks[i].stop();
   }

@@ -325,6 +325,9 @@ function mouseWheel(event) {
 }
 
 function resetViewValue(){
+  if(!scrollView){
+    return;
+  }
   setTimeSliderValue(0);
   setRepeatStartTime(-1);
   setRepeatEndTime(-1);
