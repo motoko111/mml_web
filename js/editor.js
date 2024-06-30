@@ -4,6 +4,7 @@ const REGEX_NUMBER_STR = new RegExp("([0-9])+");
 const REGEX_DOT_STR = new RegExp("(\\.)+");
 const REGEX_TAI_STR = new RegExp("(\\^)+");
 const REGEX_COMMENT_LINE = new RegExp("//.*", 'g');
+//const REGEX_COMMENT_LINE = new RegExp(/^\s*\/\/.*/, 'g');
 
 class MMLEditor{
     constructor(){
@@ -22,11 +23,8 @@ class MMLEditor{
         // 現在トラックを解析してオクターブを割り出す
         let trackMML = this.getStringBeforeCursorToSemicolon();
         let analysis = analysisEditMML(trackMML);
-        let lastNote = analysis.getLastNote();
-        // 1音もなかった場合適当に追加して解析する
-        if(!lastNote){
-            analysis = analysisEditMML(trackMML + "c");
-        }
+        // オクターブ変更はおきないはずなので適当に1音追加して解析する
+        analysis = analysisEditMML(trackMML + "c");
         let lastOctave = analysis.getLastOctave();
         let oct = mtoo(noteNumber);
         if(oct > lastOctave){
@@ -58,6 +56,23 @@ class MMLEditor{
     }
     setPlayEditNoteFunc(func){
         this.playEditNoteFunc = func
+    }
+    // カーソル位置までの文字数を計算する関数
+    getTotalCharsBeforeCursor(cursorPosition) {
+        let lines = this.editor.session.doc.getAllLines();
+        let totalChars = 0;
+        let getTextCount = (txt) => {
+            txt = txt.replace(REGEX_COMMENT_LINE, " ");
+            console.log(txt + " length:" + txt.length);
+            return txt.length + 1;
+        };
+        for (var i = 0; i < cursorPosition.row; i++) {
+            totalChars += getTextCount(lines[i]); // +1は改行文字を考慮
+        }
+        let last_txt = this.editor.session.getTextRange({start: {row: cursorPosition.row, column:0}, end: cursorPosition});
+        totalChars += getTextCount(last_txt);
+        console.log("totalChars=" + totalChars);
+        return totalChars;
     }
     // カーソル位置の列の文字列を抽出する関数
     getStringAtCursorColumn() {
@@ -114,7 +129,7 @@ class MMLEditor{
         trackStr = trackStr.replace(/@m0/g, "@m1"); // 強制ミュート
         trackStr = trackStr.replace(/(\/:|:\/)/g, ""); // 繰り返しは削除
         lineStr = lineStr.replace(/(\/:|:\/)/g, ""); // 繰り返しは削除
-        let str = trackStr + " @m0 " + lineStr;
+        let str = trackStr + "\r\n @m0 " + lineStr;
         //console.log(str);
         return str;
     }
@@ -148,7 +163,7 @@ class MMLEditor{
             bindKey: {win: "Alt-L", "mac": "Option-L"},
             exec: function(editor) {
                 stop();
-                restart();
+                rewind(true);
             }
         })
         this.editor.commands.addCommand({
@@ -177,6 +192,16 @@ class MMLEditor{
             }
             
         });
+        /*
+        this.editor.session.selection.on('changeCursor', () => {
+            let cursorPosition = _this.editor.getCursorPosition();
+            let total = _this.getTotalCharsBeforeCursor(cursorPosition);
+            console.log("Cursor moved to row: " + cursorPosition.row + ", column: " + cursorPosition.column + " total:" + total);
+            let time = G_NoteAnalysis.textIndexToTime(total);
+            console.log("Cursor moved time: " + time);
+            setTimeSliderValue(time/G_NoteAnalysis.getDuration());
+        });
+        */
     }
 
     createLogEditor(track){
@@ -226,11 +251,11 @@ class MMLEditor{
         editor.gotoLine(lastRow + 1, 0, true);
     }
     setFontSize(size){
-        this.editor.setOption("fontSize", size + "px");
+        this.editor.setOption("fontSize", size);
     }
     getFontSize(){
         let size = this.editor.getOption("fontSize");
-        size = size.replace('px', '');
+        console.log(size);
         return size;
     }
     setLastEditorPlayNote(e){

@@ -5,12 +5,14 @@
   <title>bit_mml_editor</title>
   <link rel="icon" href="assets/icon/favicon.ico" />
   <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/ace-mml.css">
   <script src="lib/Tone.js"></script>
   <script src="lib/dat.gui.min.js"></script>
   <script src="lib/p5.min.js"></script>
   <script src="lib/ace/src/ace.js"></script>
   <script src="js/mml-emitter.js"></script>
   <script src="js/common.js"></script>
+  <script src="js/audio_loader.js"></script>
   <script src="js/note_analysis.js"></script>
   <script src="js/wave_drawer.js"></script>
   <script src="js/sound.js"></script>
@@ -40,9 +42,14 @@
       <button class= "button" id="button" onclick="exportFile();"><img src="assets/icon/export.png"/><span class="button-label">export</span></button>
       <button class= "button" id="button" onclick="document.getElementById('fileInput').click();"><img src="assets/icon/folder.png"/><span class="button-label">import</span></button>
       <input type="file" id="fileInput" style="display: none;"/>
+      <button class= "button" id="button" onclick="document.getElementById('audioSourceInput').click();"><img src="assets/icon/audio.png"/><span class="button-label">音源import</span></button>
+      <input type="file" id="audioSourceInput" multiple directory webkitdirectory style="display: none;"/>
       <button class= "button button-play" id="playButton" onclick="start();"><img style="margin-right:0px;" src="assets/icon/play.png"/></button>
       <button class= "button button-stop hidden" id="stopButton" onclick="stop();"><img style="margin-right:0px;" src="assets/icon/pause.png"/></button>
-      <button class= "button button-rewind" id="button" onclick="rewind();"><img style="margin-right:0px;" src="assets/icon/rewind.png"/></button>
+      <button class= "button button-rewind" id="rewindButton" onclick="rewind();"><img style="margin-right:0px;" src="assets/icon/rewind.png"/></button>
+      <button class= "button " id="repeatStartButton" onclick="setRepeatStart();"><p class="fukidashi">リピート開始位置の設定</p><img style="margin-right:0px;" src="assets/icon/repeat_start.png"/></button>
+      <button class= "button " id="repeatEndButton" onclick="setRepeatEnd();"><img style="margin-right:0px;" src="assets/icon/repeat_end.png"/></button>
+      <button class= "button " id="resetRepeatButton" onclick="resetRepeat();"><img style="margin-right:0px;" src="assets/icon/reset_repeat.png"/></button>
       <span class="checkbox-root">
       <span class="button-label">0</span><input type="checkbox" id="track_enable_0" onclick="setVisibleTrack(0,this.checked);" checked />
       <span class="button-label">1</span><input type="checkbox" id="track_enable_1" onclick="setVisibleTrack(1,this.checked);" checked />
@@ -59,6 +66,8 @@
         <img src="assets/icon/keyboard.png"/><span class="button-label">connect midi</span>
       </button>
       <span class="checkbox-root"><input type="checkbox" id="midi_check" onclick="setInputMidi(this.checked);" /><span class="button-label">midi to text</span></span>
+      <button class= "button" id="button" onclick="addFontSize(1);"><img src="assets/icon/big.png"/></button>
+      <button class= "button" id="button" onclick="addFontSize(-1);"><img src="assets/icon/small.png"/></button>
     </div>
       <div>
         <div id="editor" style="margin-top: 4px; float:left; width: 70%; height: 440px"></div>

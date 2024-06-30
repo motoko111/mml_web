@@ -40,8 +40,11 @@ let scrollView = null;
 let scrollViewValue = 0.0;
 let rightScrollView = null;
 let rightScrollViewValue = 0.0;
+let playLineView = null;
 let repeatStartLineView = null;
 let repeatEndLineView = null;
+let repeatStartTime = -1;
+let repeatEndTime = -1;
 
 function setup() {
   DRAW_NOTE_CANVAS_HEIGHT = windowHeight * 0.4 - DRAW_SCROLL_HEIGHT;
@@ -64,8 +67,8 @@ function setup() {
   initNoteLineView();
 
   // gui setup
-  //var gui = new dat.GUI();
-  //gui.addFolder("Tracks")
+  // var gui = new dat.GUI();
+  // gui.addFolder("Tracks");
 }
 
 //ウィンドウサイズが変更されたときに実行される関数
@@ -145,7 +148,7 @@ function draw() {
   }
 
   // リピート位置描画
-  drawNoteLineView();
+  drawNoteLineView(G_NoteAnalysis, offsetTime);
   
   // 鍵盤描画
   stroke(1);
@@ -244,10 +247,10 @@ function drawAnalysis(analysis, offsetTime){
     if(TrackVisibleSettings[i] == false) continue;
     let notes = tracks[i].notes;
     for(let j = 0; j < notes.length; ++j){
+      let rangeIn = false;
       let note = notes[j];
-      let baseTime =  60 / note.tempo * (4 / 8); // 1ノート幅の時間
+      let baseTime =  analysis.getOneNoteTime(); // 1ノート幅の時間
       let noteTime = note.playbackTime - note.startTime;
-      if(noteTime < offsetTime - 2.0) continue;
       let duration = note.duration /* 音符の長さ */ * (note.quantize /* 音の長さ倍率 */ / 100);
       let noteLength = note.length;
       let length8 = noteLength * 2; // 8分音符が1マスの大きさ
@@ -259,7 +262,13 @@ function drawAnalysis(analysis, offsetTime){
       }
       // 音が鳴っているか
       if(noteTime <= offsetTime && offsetTime <= noteTime + duration ) {
+        rangeIn = true;
+      }
+      if(rangeIn){
         KeyboardStatus[note.noteNumber + note.key] = i
+      }
+      else{
+        if(getNoteX((noteTime - offsetTime) / baseTime) < 0) continue;
       }
       let right = drawNote(note.trackNumber, offsetTime, noteTime , note.noteNumber + note.key, length8, baseTime);
       if(right >= canvas.width) break;
@@ -269,7 +278,7 @@ function drawAnalysis(analysis, offsetTime){
 }
 
 function getNoteX(rate){
-  return DRAW_KEYBOARD_WIDTH + rate * DRAW_NOTE_WIDTH
+  return canvas.width / 2 + rate * DRAW_NOTE_WIDTH
 }
 
 function getNoteY(noteNumber){
@@ -315,6 +324,12 @@ function mouseWheel(event) {
   }
 }
 
+function resetViewValue(){
+  setTimeSliderValue(0);
+  setRepeatStartTime(-1);
+  setRepeatEndTime(-1);
+}
+
 function initScrollView(){
   scrollView = new ScrollHelper(0, DRAW_SCROLL_VIEW_Y, canvas.width, DRAW_SCROLL_HEIGHT, false, onChangeTimeRateScroll, onChangeTimeRateScrollEnded);
   rightScrollView = new ScrollHelper(canvas.width - DRAW_RIGHT_SCROLL_WIDTH, 0, DRAW_RIGHT_SCROLL_WIDTH, DRAW_NOTE_CANVAS_HEIGHT, true, onChangeNoteScroll, onChangeNoteScrollEnded);
@@ -332,13 +347,60 @@ function initScrollView(){
 }
 
 function initNoteLineView(){
-  //repeatStartLineView = new NoteLine(1,DRAW_NOTE_CANVAS_HEIGHT);
-  //repeatEndLineView = new NoteLine(1,DRAW_NOTE_CANVAS_HEIGHT);
+  repeatStartLineView = new NoteLine(2,DRAW_NOTE_CANVAS_HEIGHT, color(255,255,255));
+  repeatEndLineView = new NoteLine(2,DRAW_NOTE_CANVAS_HEIGHT, color(255,255,255));
+  playLineView = new NoteLine(1, DRAW_NOTE_CANVAS_HEIGHT, color(255,255,255));
 }
+function drawNoteLineView(analysis, offsetTime){
+  let start = getRepeatStartTime();
+  let end = getRepeatEndTime();
+  let oneNoteTime = analysis.getOneNoteTime();
+  repeatStartLineView.visible = start >= 0;
+  repeatEndLineView.visible = end >= 0;
+  
+  let start_x = getNoteX((start - offsetTime) / oneNoteTime);
+  let end_x = getNoteX((end - offsetTime) / oneNoteTime);
+  repeatStartLineView.x = start_x;
+  repeatEndLineView.x = end_x;
 
-function drawNoteLineView(){
-  //repeatStartLineView.draw();
-  //repeatEndLineView.draw();
+  repeatStartLineView.draw();
+  repeatEndLineView.draw();
+
+  
+  // 再生範囲だけを明るくする
+  {
+    fill(0,0,0,64)
+    if(start_x > 0){
+      rect(DRAW_KEYBOARD_WIDTH,0,start_x-DRAW_KEYBOARD_WIDTH,DRAW_NOTE_CANVAS_HEIGHT);
+    }
+    if(end_x+2 < canvas.width){
+      rect(end_x+2,0,canvas.width - end_x,DRAW_NOTE_CANVAS_HEIGHT);
+    }
+  }
+
+  playLineView.x = canvas.width / 2;
+  playLineView.draw();
+
+}
+function setRepeatStartTime(time){
+  repeatStartTime = time;
+}
+function setRepeatEndTime(time){
+  repeatEndTime = time;
+}
+function getRepeatStartTime(){
+  if(!G_NoteAnalysis) return 0;
+  return repeatStartTime < 0 ? 0 : repeatStartTime;
+}
+function getRepeatEndTime(){
+  if(!G_NoteAnalysis) return -1;
+  return repeatEndTime < 0 ? G_NoteAnalysis.getDuration() : repeatEndTime;
+}
+function isSetRepeatStartTime(){
+  return repeatStartTime > 0;
+}
+function isSetRepeatEndTime(){
+  return repeatEndTime >= 0;
 }
 
 function onChangeTimeRateScroll(x,y){

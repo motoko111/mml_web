@@ -65,6 +65,10 @@ function restart(){
   start();
 }
 
+function reset(){
+  resetViewValue(); 
+}
+
 var newFile = async () => {
   let result = window.confirm('新規作成\n現在編集中のデータは削除されます。よろしいですか？');
   if(!result){
@@ -74,6 +78,7 @@ var newFile = async () => {
   stop();
   mmlEditor.clear();
   G_NoteAnalysis.clear();
+  reset();
   drawUpdate();
 
   await loadFileAsync('mml/template.mml', (txt) => {
@@ -82,6 +87,7 @@ var newFile = async () => {
     console.log(txt);
   });
 };
+
 
 function saveLocalStorage(){
   let content = mmlEditor.editor.getValue();
@@ -96,6 +102,7 @@ function deleteLocalStorage(){
   if(result){
     mmlEditor.editor.setValue("");
     localStorage.removeItem("work.mml");
+    reset();
     drawUpdate();
     popup("ローカルストレージのデータを削除しました。");
     return true;
@@ -111,6 +118,7 @@ function loadLocalStorage(){
       mmlEditor.editor.setValue(content, -1);  // -1はカーソルをファイルの先頭に戻す
       drawUpdate();
       analysisMML(content);
+      reset();
       return true;
     }
   }
@@ -163,11 +171,24 @@ function start(){
   updateIcon();
 }
 
-function rewind(){
+function rewind(forcePlay){
+  if(isSetRepeatStartTime()){
+    repeatRewind(forcePlay);
+  }
+  else{
+    let isPlay = isPlayMainEmitter();
+    stop();
+    setTimeSliderValue(0);
+    if(forcePlay || isPlay) start();
+    updateIcon();
+  }
+}
+
+function repeatRewind(forcePlay){
   let isPlay = isPlayMainEmitter();
   stop();
-  setTimeSliderValue(0);
-  if(isPlay) start();
+  setTimeSliderValue(getRepeatStartTime() / G_NoteAnalysis.getDuration());
+  if(forcePlay || isPlay) start();
   updateIcon();
 }
 
@@ -183,6 +204,29 @@ function stop(){
     return;
   }
   updateIcon();
+}
+
+function setRepeatStart(){
+  if(G_NoteAnalysis){
+    setRepeatStartTime(G_NoteAnalysis.getDuration() * getTimeSliderValue());
+    if(getRepeatEndTime() >= 0 && getRepeatStartTime() > getRepeatEndTime()){
+      setRepeatEnd();
+    }
+  }
+}
+
+function setRepeatEnd(){
+  if(G_NoteAnalysis){
+    setRepeatEndTime(G_NoteAnalysis.getDuration() * getTimeSliderValue());
+    if(getRepeatStartTime() >= 0 && getRepeatEndTime() < getRepeatStartTime()){
+      setRepeatStart();
+    }
+  }
+}
+
+function resetRepeat(){
+  setRepeatStartTime(-1);
+  setRepeatEndTime(-1);
 }
 
 function updateIcon(){
@@ -202,10 +246,37 @@ function updateIcon(){
   prevPlayMainEmitter = isPlayMainEmitter();
 }
 
+function mutePlay(mml, startTime){
+  var config = { context: Tone.context };
+  config.timerAPI = {
+    "setInterval":function(func, interval){
+    },
+    "clearInterval":function(intervalId){
+    },
+  }
+
+  let emitter = new MMLEmitter(mml, config);
+  
+  emitter.on("note", function(e) {
+    e.mute = true;
+    // console.log("mutePlay:" + e)
+    playNote(e);
+  });
+  emitter.on("end:all", function(e) {
+    emitter.stop();
+  });
+
+  emitter.start();
+  emitter.scheduler.demo(emitter._startTime, emitter._startTime + startTime);
+  emitter = null;
+}
+
 function play(mml, startTimeRate) {
 
   setupAudioAsync(() => {
     try{
+      resetTracks(tracks);
+
       var config = { context: Tone.context };
       mmlEmitter = new MMLEmitter(mml, config);
       G_NoteAnalysis.analysis(mml, config);
@@ -226,11 +297,15 @@ function play(mml, startTimeRate) {
       });
     
       let startTime = G_NoteAnalysis.getDuration() * startTimeRate;
+
+      this.mutePlay(mml, startTime);
+
       mmlEmitter.start(getCurrentTime() - startTime);
       playEmitterStartTime = mmlEmitter._startTime;
     
       drawUpdate();
     }catch(e){
+      popupError(e);
       console.log(e);
       return;
     }
@@ -243,6 +318,12 @@ function editPlay(mml, playLine){
   setupAudioAsync(() => {
     try{
       stopTracks(editTracks);
+      resetTracks(editTracks);
+
+      if(mmlEditEmitter != null){
+        mmlEditEmitter.stop();
+      }
+      mmlEditEmitter = null;
   
       var config = { context: Tone.context };
       let lastNote = null;
@@ -258,6 +339,7 @@ function editPlay(mml, playLine){
           G_EditNoteAnalysis.clear();
           let firstPlaybackTime = -1;
           let firstLength = -1;
+          let lag = 0.1;
           playEditEmitterStartTime = Tone.context.currentTime
           notes.forEach(note => {
             if(note.mute){
@@ -270,7 +352,7 @@ function editPlay(mml, playLine){
             }
             note.mute = false;
             let dt = (note.playbackTime - firstPlaybackTime);
-            note.playbackTime = Tone.context.currentTime + dt;
+            note.playbackTime = Tone.context.currentTime + dt + lag;
             note.currentLength = note.currentLength - firstLength;
             //console.log(note)
             G_EditNoteAnalysis.add(playEditEmitterStartTime, JSON.parse(JSON.stringify(note)));
@@ -308,6 +390,7 @@ function editPlay(mml, playLine){
       mmlEditEmitter.scheduler.demo(mmlEditEmitter._startTime, mmlEditEmitter._startTime + 60*10);
       mmlEditEmitter = null
     }catch(e){
+      popupError(e);
       console.log(e);
       return;
     }
@@ -328,6 +411,11 @@ function getNoteAnalysis(){
   return G_NoteAnalysis;
 }
 
+function resetTracks(_tracks){
+  for(let i = 0; i < _tracks.length; ++i){
+    _tracks[i].reset();
+  }
+}
 
 function stopTracks(_tracks){
   for(let i = 0; i < _tracks.length; ++i){
@@ -358,7 +446,6 @@ function createTrackSounds(){
     new TrackSound(new TrackSoundSource()),
     new TrackSound(new TrackSoundSource()),
     new TrackSound(new TrackSoundSource()),
-    //new TrackSound(new TrackSoundPlayer()),
     new TrackSound(new TrackSoundSource()),
     new TrackSound(new TrackSoundSource()),
     new TrackSound(new TrackSoundSource()),
@@ -430,6 +517,14 @@ function setInputMidi(flag){
   
 }
 
+function addFontSize(dir){
+  if(dir > 0){
+    mmlEditor.setFontSize(Math.min(64,mmlEditor.getFontSize() + 2));
+  }
+  else{
+    mmlEditor.setFontSize(Math.max(8,mmlEditor.getFontSize() - 2));
+  }
+}
 
 function initDocument(){
   document.getElementById('fileInput').addEventListener('change', function(event) {
@@ -442,6 +537,25 @@ function initDocument(){
         };
         reader.readAsText(file);
     }
+  });
+  let audioSourceInput = document.getElementById('audioSourceInput');
+  audioSourceInput.addEventListener('change', function() {
+    const files = Array.from(audioSourceInput.files);
+    const regex = new RegExp("^[0-9]+_.*\.(wav|mp3|ogg)$", 'g');
+    files.forEach(file => {
+      if(file.name.match(regex)){
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var content = e.target.result;
+            G_AudioSourceLoader.loadBufferAsync(file.name, content,(info) => {
+              console.log("success:" + info.fileName);
+            },() => {
+              console.log("error:" + file.name);
+            });
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    });
   });
 }
 
@@ -466,6 +580,8 @@ function setupMidiKeyboard(){
 var setupAudioAsync = async (callback) => {
 
   //console.log("setupAudioAsync check");
+
+  await G_AudioSourceLoader.waitForFinishLoad();
 
   if(finishedInitAudio) {
     while(!isLoadedTracks(tracks) || !isLoadedTracks(editTracks)){
@@ -502,9 +618,18 @@ function setupMainTick(){
   let handler = {};
   let tickFunc = () => {
     updateIcon();
-    if(isPlayMainEmitter() && getEmitterCurrentPlayTime() > G_NoteAnalysis.getDuration()){
-      stop();
-      rewind();
+    if(isPlayMainEmitter() ){
+      if(isSetRepeatEndTime() && getEmitterCurrentPlayTime() > getRepeatEndTime()){
+        repeatRewind();
+      } else if(getEmitterCurrentPlayTime() > G_NoteAnalysis.getDuration()){
+        if(isSetRepeatStartTime()){
+          repeatRewind();
+        }
+        else{
+          stop();
+          rewind();
+        }
+      }
     }
   };
   let loop = function(){

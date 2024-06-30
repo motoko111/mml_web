@@ -1,15 +1,21 @@
 class NoteLine {
-    constructor(w,h){
+    constructor(w,h, col){
         this.x = canvas.width/2;
         this.y = 0;
         this.w = w;
         this.h = h;
-        this.color = color(255, 255, 255);
+        this.visible = true;
+        this.color = col ? col : color(255,255,255);
     }
     draw(){
+        if(!this.visible) return;
         noStroke();
         fill(this.color);
         rect(this.x,this.y,this.w,this.h);
+    }
+    setPosition(x,y){
+        this.x = x;
+        this.y = y;
     }
 }
 class RepeatNoteLine extends NoteLine {

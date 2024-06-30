@@ -21,6 +21,17 @@ class NoteAnalysis {
       }
       return val;
     }
+    getFirstTempo(){
+      for(let i = 0; i < this.tracks.length; ++i){
+        if(this.tracks[i].firstTempo > 0){
+          return this.tracks[i].firstTempo;
+        }
+      }
+      return 120;
+    }
+    getOneNoteTime(){
+      return 60 / this.getFirstTempo() * (4 / 8); // 1ノート幅の時間
+    }
     getLastNote(){
       return this.lastNote;
     }
@@ -30,6 +41,21 @@ class NoteAnalysis {
       }
       if(this.lastInfo){
         return this.lastInfo.octave ? this.lastInfo.octave : 0;
+      }
+      return 0;
+    }
+    textIndexToTime(index){
+      for(let i = 0; i < this.tracks.length; ++i){
+        console.log(this.tracks[i]);
+        if(this.tracks[i].startTextIndex <= index && index <= this.tracks[i].endTextIndex){
+            let track = this.tracks[i];
+            let notes = track.notes;
+            for(let iNote = 0; iNote < notes.length; ++iNote){
+              if(notes[iNote].textIndex >= index){
+                return notes[iNote].playbackTime - notes[iNote].startTime;
+              }
+            }
+        }
       }
       return 0;
     }
@@ -52,7 +78,7 @@ class NoteAnalysis {
         // console.log("demo NOTE: " + JSON.stringify(e));
       });
       emitter.on("end:all", function(e) {
-        console.log("demo END : " + JSON.stringify(e));
+        // console.log("demo END : " + JSON.stringify(e));
       });
       emitter.start();
       emitter.scheduler.demo(emitter._startTime, emitter._startTime + 60*10);
@@ -62,15 +88,25 @@ class NoteAnalysis {
   }
   class NoteAnalysisTrack {
     constructor(trackNumber){
+      this.isEnable = false;
       this.trackNumber = trackNumber
       this.startTime = 0;
       this.lastTime = 0;
+      this.startTextIndex = 0;
+      this.endTextIndex = 0;
+      this.firstTempo = 0;
       this.notes  = []
     }
     getDuration(){
       return this.lastTime - this.startTime;
     }
     add(startTime, e){
+      if(!this.isEnable){
+        this.isEnable = true;
+        this.firstTempo = e.tempo;
+        this.startTextIndex = e.textIndex;
+      }
+      this.endTextIndex = Math.max(this.endTextIndex, e.textIndex);
       e.startTime = startTime;
       e.lastTime = Math.max(this.lastTime, e.playbackTime + e.duration + e.slurDuration);
       this.startTime = startTime;

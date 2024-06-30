@@ -47,6 +47,7 @@ var MMLEmitter = (function (_SeqEmitter) {
     }
 
     var MMLIteratorClass = config.MMLIterator || _mmlIterator2.default;
+
     var tracks = (0, _stripComments2.default)(source).split(";");
 
     tracks = tracks.filter(function (source) {
@@ -1004,6 +1005,7 @@ exports["default"] = {
   quantize: 75,
   loopCount: 2,
   envelope: [0,0.1,1,0.5],
+  command: [[{command:"v",value:[0,0]}]],
   wave: null,
   slur: null,
   mute: false,
@@ -1040,8 +1042,10 @@ var MMLIterator = (function () {
   function MMLIterator(source) {
     _classCallCheck(this, MMLIterator);
 
-    this.source = source;
+    source = this.parseVariable(source);
+    //console.log(source);
 
+    this.source = source;
     this._commands = new _MMLParser2["default"](source).parse();
     this._commandIndex = 0;
     this._processedTime = 0;
@@ -1055,6 +1059,7 @@ var MMLIterator = (function () {
     this._tone = _DefaultParams2["default"].tone;
     this._key = _DefaultParams2["default"].key;
     this._envelope = _DefaultParams2["default"].envelope;
+    this._command = JSON.parse(JSON.stringify(_DefaultParams2["default"].command));
     this._mute = _DefaultParams2["default"].mute;
     this._wave = _DefaultParams2["default"].wave;
     this._slur = _DefaultParams2["default"].slur;
@@ -1174,6 +1179,133 @@ var MMLIterator = (function () {
       return ;
     }
   },
+  {
+    key: "parseVariable_old",
+    value: function parseVariable_old (src, refVariables) {
+      if(refVariables === undefined) refVariables = {}
+      const targetRegex = new RegExp(/(var[\s]+)?[a-zA-Z0-9@_]+[\s]*=[\s]*.*(\r|\n)+/, 'g');
+      const nameStartRegex = new RegExp(/^(var[\s]+)?/, 'g');
+      const nameEqualLeftRegex = new RegExp(/^(var[\s]+)?[a-zA-Z0-9@_]+[\s]*=[\s]*/, 'g');
+      const nameEqualDeleteRegex = new RegExp(/[\s]*=[\s]*/, 'g');
+      const startRegex = new RegExp(/^(var[\s]+)?[a-zA-Z0-9@_]+[\s]*=[\s]*/, 'g');
+      const endRegex = new RegExp(/(\r|\n)+/, 'g');
+      let match;
+      let num = 0;
+      let execStr = src;
+      while ((match = targetRegex.exec(execStr)) !== null) {
+        let str = match[0];
+        let name = str.match(nameEqualLeftRegex)[0].replace(nameEqualDeleteRegex,"").replace(nameStartRegex, "");
+        let value = str.replace(startRegex, "").replace(endRegex, "");
+        refVariables[name] = {value:value, repStr:"@@@@@{" + num + "}@@@@@", index:match.index};
+        num++;
+        src = src.replace(str, "");
+      }
+      if(num > 0){
+        // 変数を置換
+        Object.keys(refVariables).map(key => {
+          src = src.replaceAll(key, refVariables[key].repStr);
+        });
+        Object.keys(refVariables).map(key => {
+          src = src.replaceAll(refVariables[key].repStr, refVariables[key].value);
+        });
+      }
+      return src;
+    }
+  },
+  {
+    key: "parseVariable",
+    value: function parseVariable (src, refVariables) {
+      if(refVariables === undefined) refVariables = {}
+
+      const targetRegex = new RegExp(/(var[\s]+)?[a-zA-Z0-9@_]+[\s]*=[\s]*.*/, 'g');
+      const nameStartRegex = new RegExp(/^(var[\s]+)?/, 'g');
+      const nameEqualLeftRegex = new RegExp(/^(var[\s]+)?[a-zA-Z0-9@_]+[\s]*=[\s]*/, 'g');
+      const nameEqualDeleteRegex = new RegExp(/[\s]*=[\s]*/, 'g');
+      const startRegex = new RegExp(/^(var[\s]+)?[a-zA-Z0-9@_]+[\s]*=[\s]*/, 'g');
+      const endRegex = new RegExp(/(\r|\n)+/, 'g');
+
+      let replaceValueInValue = function(index, str){
+        // 変数内変数がある場合は置換
+        Object.keys(refVariables).map(key => {
+          let end = refVariables[key].endLineIndex;
+          if(index >= end){
+            str = str.replaceAll(refVariables[key].repStr, refVariables[key].value);
+            lines[index] = str;
+          }
+        });
+        return str;
+      }
+
+      const lines = src.split(/\r\n|\n/);
+      let num = 0;
+      for(let i = 0; i < lines.length; ++i){
+        let line = lines[i];
+        let matches = line.match(targetRegex);
+        if(matches){
+          matches.forEach((match) => {
+            let startIndex = i;
+
+            match = replaceValueInValue(i, match);
+
+            let name = match.match(nameEqualLeftRegex)[0].replace(nameEqualDeleteRegex,"").replace(nameStartRegex, "");
+            let value = match.replace(startRegex, "");
+
+            let hierarchy = 0;
+            let valueStr = "";
+            let read = (val) => {
+              for (let iStr = 0; iStr < val.length; iStr++) 
+              {
+                let s = val[iStr];
+                if(s === '{'){
+                  hierarchy ++;
+                  if(hierarchy === 1) continue;
+                } else if (s === '}'){
+                  hierarchy --;
+                  if(hierarchy === 0) continue;
+                }
+                valueStr+=s;
+              }
+            }
+            while(true){
+              read(value);
+              if(hierarchy === 0){
+                break;
+              }
+              if(lines.length >= i + 1) break;
+              i++;
+              value = lines[i];
+              value = replaceValueInValue(i, value);
+            }
+
+            refVariables[name] = {value:valueStr, repStr:"${" + name + "}", startLineIndex:startIndex, endLineIndex:i};
+
+            let start = refVariables[name].startLineIndex;
+            let end = refVariables[name].endLineIndex;
+            for(let j = start ; j <= end; ++j){
+              lines[j] = "";
+              // console.log("delete line:" + j);
+            }
+            num++;
+          });
+        }
+      }
+      if(num > 0){
+        Object.keys(refVariables).map(key => {
+          let end = refVariables[key].endLineIndex;
+          for(let i = end; i < lines.length; ++i){
+            lines[i] = lines[i].replaceAll(key, refVariables[key].value);
+          }
+        });
+        let str = "";
+        for(let i = 0; i < lines.length; ++i){
+          str += lines[i];
+          if(i != lines.length - 1)  str += "\r\n";
+        }
+        return str;
+      }
+      return src;
+    }
+  },
   // ======================================
    {
     key: _Syntax2["default"].Note,
@@ -1182,6 +1314,7 @@ var MMLIterator = (function () {
 
       var type = "note";
       var time = this._processedTime;
+      var textIndex = command.textIndex;
       var duration = this._calcDuration(command.noteLength);
       var noteNumbers = command.noteNumbers.map(function (noteNumber) {
         return _this2._calcNoteNumber(noteNumber);
@@ -1194,10 +1327,12 @@ var MMLIterator = (function () {
       var length128 = this._lastNoteLength; // 追加
       var length = this._lastNoteLength / 128 * 4; // 4/4のときの長さ
       var envelope = this._envelope;
+      var cmd = this._command;
       var mute = this._mute;
       var wave = this._wave;
       var currentLength = this._currentLength;
       this._wave = null;
+      this._command = null;
 
       this._processedTime = this._processedTime + duration;
       this._currentLength = this._currentLength + length128; // 少数を使わないように128分音符を基準の長さにする
@@ -1239,11 +1374,14 @@ var MMLIterator = (function () {
           length:length,
           currentLength:currentLength,
           envelope:envelope,
+          chord:noteNumbers.length > 1,
+          commands:cmd,
           mute:mute,
           wave:wave,
           slur:slur,
           slurDuration:slurDuration,
-          key:key
+          key:key,
+          textIndex:textIndex,
           };
       }));
     }
@@ -1303,6 +1441,19 @@ var MMLIterator = (function () {
     key: _Syntax2["default"].Envelope,
     value: function value(command) {
       this._envelope = command.value !== null ? command.value : _DefaultParams2["default"].envelope;
+    }
+  },
+  {
+    key: _Syntax2["default"].Command,
+    value: function value(command) {
+      if(!this._command) this._command = [];
+      if(command.value !== null){
+        this._command.push({
+          command:command.command,
+          value:command.value
+        });
+      }
+      // this._command = command.value !== null ? command.value : _DefaultParams2["default"].command;
     }
   },
   {
@@ -1425,7 +1576,7 @@ var NOTE_INDEXES = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 };
 var MMLParser = (function () {
   function MMLParser(source) {
     _classCallCheck(this, MMLParser);
-
+    
     this.scanner = new _Scanner2["default"](source);
   }
 
@@ -1484,6 +1635,8 @@ var MMLParser = (function () {
           return this.readSlur();
         case '|':
           return this.readNone();
+        case '=':
+          return this.readVariable();
         default:
         // do nothing
           //return this.readNone();
@@ -1500,7 +1653,31 @@ var MMLParser = (function () {
         type: "none",
       };
     }
-  }, 
+  }, {
+    key: "readVariable",
+    value: function readVariable() {
+      var _this5 = this;
+
+      this.scanner.expect("=");
+
+      let nextStr = this.scanner.getNext();
+      let str = "";
+      if(nextStr == "{"){
+        this.scanner.expect("{");
+        this._readUntil("}", function () {
+          str += _this5.scanner.peek();
+          _this5.scanner.next();
+        });
+      }
+
+      return {
+        type: _Syntax2["default"].Variable,
+        noteNumbers: [this._readNoteNumber(0)],
+        noteLength: this._readLength(),
+        textIndex: this.scanner.index,
+      };
+    }
+  },
    // =============================================
   {
     key: "readNote",
@@ -1508,7 +1685,8 @@ var MMLParser = (function () {
       return {
         type: _Syntax2["default"].Note,
         noteNumbers: [this._readNoteNumber(0)],
-        noteLength: this._readLength()
+        noteLength: this._readLength(),
+        textIndex: this.scanner.index,
       };
     }
   }, {
@@ -1550,7 +1728,8 @@ var MMLParser = (function () {
       return {
         type: _Syntax2["default"].Note,
         noteNumbers: noteList,
-        noteLength: this._readLength()
+        noteLength: this._readLength(),
+        textIndex: this.scanner.index,
       };
     }
   }, {
@@ -1676,6 +1855,29 @@ var MMLParser = (function () {
           value: valueList
         };
       }
+      // cmd
+      else if(nextStr == "c"){
+        this.scanner.expect("c");
+        this.scanner.expect("[");
+        let valueList = []
+        let command = null;
+        let _this4 = this;
+        this._readUntil("]", function () {
+          let val = _this4._readArgument(/\d+(\.\d+)?/);
+          if(val === null) {
+            val = _this4._readStr(/[a-z]+/);
+            if(val === null) _this4.scanner.next();
+            else command = val;
+          }
+          else valueList.push(val);
+        });
+        this.scanner.expect("]");
+        return {
+          type: _Syntax2["default"].Command,
+          command: command,
+          value: valueList
+        };
+      }
 
       return {
         type: _Syntax2["default"].Tone,
@@ -1738,7 +1940,15 @@ var MMLParser = (function () {
 
       return num !== null ? +num : null;
     }
-  }, {
+  },{
+    key: "_readStr",
+    value: function _readStr(matcher) {
+      var str = this.scanner.scan(matcher);
+
+      return str !== null ? str : null;
+    }
+  },
+   {
     key: "_readNoteNumber",
     value: function _readNoteNumber(offset) {
       var noteIndex = NOTE_INDEXES[this.scanner.next()];
@@ -1994,6 +2204,7 @@ exports["default"] = {
   Slur: "Slur",
   Key: "key",
   Envelope: "Envelope",
+  Command: "Command",
   Mute: "Mute",
   Wave: "Wave",
   InfiniteLoop: "InfiniteLoop",
