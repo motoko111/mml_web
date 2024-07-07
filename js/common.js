@@ -3,6 +3,7 @@ const SOUND_MAP = ['A','A#','B','C','C#','D','D#','E','F','F#','G','G#'];
 const SOUND_MAP_LOWER = ['a','a+','b','c','c+','d','d+','e','f','f+','g','g+'];
 const KEYBOARD_SIZE_MAP = [];
 
+
 function mtof(noteNumber) {
     return 440 * Math.pow(2, (noteNumber - 69) / 12);
   }
@@ -42,16 +43,32 @@ function mtoc(noteNumber, isLower){
 }
 
 function mtoo(noteNumber){
-    let a4_diff = (noteNumber - 69);
-    let c4_diff = a4_diff+9
-    let octave = 0 // C4から12増えるごとにオクターブ+1 C4から
-    if(c4_diff > 0){
-        octave = 4 + Math.floor(c4_diff / 12);
+    return Math.floor(noteNumber / 12) - 1;
+}
+
+function createNoteNumberMap(){
+    map = {}
+    for(let o = -12;o<=12;++o){
+        for(let i = 0;i<12;++i){
+            let noteNumber = 0;
+            if(i <= 2){
+                noteNumber = (i+9) + o * 12;
+            }
+            else{
+                noteNumber = (i-3) + o * 12;
+            }
+            map[SOUND_MAP[i] + o] = noteNumber;
+            map[SOUND_MAP_LOWER[i] + o] = noteNumber
+        }
     }
-    else{
-        octave = 4 - Math.floor(Math.abs(c4_diff) / 12) + (Math.abs(c4_diff) % 12 > 0 ? -1 : 0);
-    }
-    return octave
+    return map;
+}
+const NOTENUMBER_MAP = createNoteNumberMap();
+
+function toNoteNumber(mtoco_str){
+    let n = NOTENUMBER_MAP[mtoco_str];
+    if(n) return n;
+    return -1000;
 }
 
 function getCurrentTime(){

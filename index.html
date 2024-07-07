@@ -11,16 +11,19 @@
   <script src="lib/p5.min.js"></script>
   <script src="lib/ace/src/ace.js"></script>
   <script src="js/mml-emitter.js"></script>
+  <script src="js/mml_parser.js"></script>
   <script src="js/common.js"></script>
   <script src="js/audio_loader.js"></script>
   <script src="js/note_analysis.js"></script>
   <script src="js/wave_drawer.js"></script>
+  <script src="js/sound/filter.js"></script>
   <script src="js/sound.js"></script>
   <script src="js/import_file.js"></script>
   <script src="js/editor.js"></script>
   <script src="js/midi_keyboard.js"></script>
   <script src="js/note_line.js"></script>
   <script src="js/scroll.js"></script>
+  <script src="js/shader/material.js"></script>
   <script src="js/popup.js"></script>
   <script src="js/main.js"></script>
 </head>
@@ -37,12 +40,12 @@
       <select class= "dropdown" id="sample">
       </select>
       -->
-      <button class= "button button-blue" id="button" onclick="saveLocalStorage();"><img src="assets/icon/save.png"/><span class="button-label">save (local storage)</span></button>
-      <button class= "button button-red" id="button" onclick="deleteLocalStorage();"><img src="assets/icon/delete.png"/><span class="button-label">delete (local storage)</span></button>
-      <button class= "button" id="button" onclick="exportFile();"><img src="assets/icon/export.png"/><span class="button-label">export</span></button>
-      <button class= "button" id="button" onclick="document.getElementById('fileInput').click();"><img src="assets/icon/folder.png"/><span class="button-label">import</span></button>
+      <button class= "button button-blue" id="saveButton" onclick="saveLocalStorage();"><img src="assets/icon/save.png"/><span class="button-label">save (local storage)</span></button>
+      <button class= "button button-red" id="deleteButton" onclick="deleteLocalStorage();"><img src="assets/icon/delete.png"/><span class="button-label">delete (local storage)</span></button>
+      <button class= "button" id="exportButton" onclick="exportFile();"><img src="assets/icon/export.png"/><span class="button-label">export</span></button>
+      <button class= "button" id="importButton" onclick="document.getElementById('fileInput').click();"><img src="assets/icon/folder.png"/><span class="button-label">import</span></button>
       <input type="file" id="fileInput" style="display: none;"/>
-      <button class= "button" id="button" onclick="document.getElementById('audioSourceInput').click();"><img src="assets/icon/audio.png"/><span class="button-label">音源import</span></button>
+      <button class= "button" type="button" id="button" onclick="document.getElementById('audioSourceInput').click();"><img src="assets/icon/audio.png"/><span class="button-label">音源import</span></button>
       <input type="file" id="audioSourceInput" multiple directory webkitdirectory style="display: none;"/>
       <button class= "button button-play" id="playButton" onclick="start();"><img style="margin-right:0px;" src="assets/icon/play.png"/></button>
       <button class= "button button-stop hidden" id="stopButton" onclick="stop();"><img style="margin-right:0px;" src="assets/icon/pause.png"/></button>

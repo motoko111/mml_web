@@ -1005,6 +1005,7 @@ exports["default"] = {
   quantize: 75,
   loopCount: 2,
   envelope: [0,0.1,1,0.5],
+  baseTone: null,
   command: [[{command:"v",value:[0,0]}]],
   wave: null,
   slur: null,
@@ -1059,6 +1060,7 @@ var MMLIterator = (function () {
     this._tone = _DefaultParams2["default"].tone;
     this._key = _DefaultParams2["default"].key;
     this._envelope = _DefaultParams2["default"].envelope;
+    this._baseTone = _DefaultParams2["default"].baseTone;
     this._command = JSON.parse(JSON.stringify(_DefaultParams2["default"].command));
     this._mute = _DefaultParams2["default"].mute;
     this._wave = _DefaultParams2["default"].wave;
@@ -1327,6 +1329,7 @@ var MMLIterator = (function () {
       var length128 = this._lastNoteLength; // 追加
       var length = this._lastNoteLength / 128 * 4; // 4/4のときの長さ
       var envelope = this._envelope;
+      var baseTone = this._baseTone;
       var cmd = this._command;
       var mute = this._mute;
       var wave = this._wave;
@@ -1374,6 +1377,7 @@ var MMLIterator = (function () {
           length:length,
           currentLength:currentLength,
           envelope:envelope,
+          baseTone:baseTone,
           chord:noteNumbers.length > 1,
           commands:cmd,
           mute:mute,
@@ -1441,6 +1445,12 @@ var MMLIterator = (function () {
     key: _Syntax2["default"].Envelope,
     value: function value(command) {
       this._envelope = command.value !== null ? command.value : _DefaultParams2["default"].envelope;
+    }
+  },
+  {
+    key: _Syntax2["default"].BaseTone,
+    value: function value(command) {
+      this._baseTone = command.value !== null ? command.value : _DefaultParams2["default"].baseTone;
     }
   },
   {
@@ -1810,8 +1820,24 @@ var MMLParser = (function () {
     value: function readTone() {
       let nextStr = this.scanner.getNext()
       this.scanner.expect("@");
+      // BaseTone
+      if(nextStr == "["){
+        this.scanner.expect("[");
+        let str = "";
+        let _this4 = this;
+        this._readUntil("]", function () {
+          let val = _this4._readStr(/([a-z]|[A-Z]|\+|\-|#|[0-9])+/);
+          if(val == null) _this4.scanner.next();
+          else str += val;
+        });
+        this.scanner.expect("]");
+        return {
+          type: _Syntax2["default"].BaseTone,
+          value: str,
+        }
+      }
       // envelope
-      if(nextStr == "e"){
+      else if(nextStr == "e"){
         this.scanner.expect("e");
         this.scanner.expect("[");
         let valueList = []
@@ -1862,12 +1888,23 @@ var MMLParser = (function () {
         let valueList = []
         let command = null;
         let _this4 = this;
+        let isCommand = false
         this._readUntil("]", function () {
           let val = _this4._readArgument(/\d+(\.\d+)?/);
           if(val === null) {
-            val = _this4._readStr(/[a-z]+/);
-            if(val === null) _this4.scanner.next();
-            else command = val;
+            if(isCommand){
+              val = _this4._readStr(/([a-z]|[A-Z]|\+|\-|#|[0-9])+/);
+              if(val === null) _this4.scanner.next();
+              else valueList.push(val);
+            }
+            else{
+              val = _this4._readStr(/[a-z]+/);
+              if(val === null) _this4.scanner.next();
+              else {
+                command = val;
+                isCommand = true;
+              }
+            }
           }
           else valueList.push(val);
         });
@@ -2204,6 +2241,7 @@ exports["default"] = {
   Slur: "Slur",
   Key: "key",
   Envelope: "Envelope",
+  BaseTone: "BaseTone",
   Command: "Command",
   Mute: "Mute",
   Wave: "Wave",

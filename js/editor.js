@@ -118,7 +118,7 @@ class MMLEditor{
     }
     analysisPlayNote(last){
         let str = this.getStringBeforeCursorToSemicolon() + last;
-        //console.log(str);
+        console.log(str);
         return str;
     }
     analysisPlayLineNote(){

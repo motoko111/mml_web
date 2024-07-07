@@ -41,30 +41,47 @@ let scrollViewValue = 0.0;
 let rightScrollView = null;
 let rightScrollViewValue = 0.0;
 let playLineView = null;
+let splitLineViews = [];
 let repeatStartLineView = null;
 let repeatEndLineView = null;
 let repeatStartTime = -1;
 let repeatEndTime = -1;
 
+let postProcess;
+let bitFont;
+let pg;
+let gl;
+
+function preload() {
+  // トゥルータイプフォントを読み込む
+  // https://fonts.google.com/specimen/Trade+Winds
+  // WEBGL: you must load and set a font before drawing text.
+  bitFont = loadFont('assets/font/8bitoperator_jve.ttf');
+}
+
 function setup() {
   DRAW_NOTE_CANVAS_HEIGHT = windowHeight * 0.4 - DRAW_SCROLL_HEIGHT;
   DRAW_SCROLL_VIEW_Y = DRAW_NOTE_CANVAS_HEIGHT;
-  canvas = createCanvas(windowWidth - 20, windowHeight * 0.4);
+  canvas = createCanvas(windowWidth - 20, windowHeight * 0.4, WEBGL);
+  gl = canvas.elt.getContext('webgl2');
+  pg = createGraphics(canvas.width, canvas.height);
   TRACK_COLORS = [
-    color(0, 155, 255),
-    color(255, 155, 0),
-    color(155, 255, 0),
-    color(255, 45, 45),
-    color(102, 134, 166),
-    color(237, 100, 71),
-    color(255, 255, 255),
-    color(255, 255, 255),
-    color(255, 255, 255),
-    color(255, 255, 255),
+    color(0, 160, 255),
+    color(91, 130, 194),
+    color(0, 255, 110),
+    color(255, 60, 60),
+    color(194, 130, 91),
+    color(201, 133, 93),
+    color(196, 165, 92),
+    color(163, 196, 92),
+    color(94, 196, 92),
+    color(91, 194, 160),
   ]
 
   initScrollView();
   initNoteLineView();
+
+  postProcess = new Material(canvas, './shader/vert.glsl', './shader/frag.glsl');
 
   // gui setup
   // var gui = new dat.GUI();
@@ -76,13 +93,19 @@ function windowResized() {
   DRAW_NOTE_CANVAS_HEIGHT = windowHeight * 0.4 - DRAW_SCROLL_HEIGHT;
   DRAW_SCROLL_VIEW_Y = DRAW_NOTE_CANVAS_HEIGHT;
   resizeCanvas(windowWidth - 20, windowHeight * 0.4);
+  pg = createGraphics(canvas.width, canvas.height);
 
   initScrollView();
   initNoteLineView();
 }
 
 function draw() {
+  
   background(220);
+  translate(-canvas.width / 2,-canvas.height / 2);
+
+  pg.push();
+  pg.clear();
 
   let offsetTime = getEmitterCurrentPlayTime();
   
@@ -101,7 +124,7 @@ function draw() {
   let note_back_black_color = color(50,50,50)
   let isBlackKeyboard = false;
 
-  stroke(1);
+  pg.stroke(1);
   note = DefaultNoteNumber;
   y = 0;
   for(let o = 0; o < 4; ++o){
@@ -120,16 +143,16 @@ function draw() {
       // 横
       let side_x = x + w
       if(isBlackKeyboard){
-        fill(note_back_black_color)
+        pg.fill(note_back_black_color)
       }
       else{
-        fill(note_back_color)
+        pg.fill(note_back_color)
       }
       for(let n = 0; n < 1; ++n){
-        strokeWeight(0.2)
+        pg.strokeWeight(0.2)
         let draw_note_w = Math.min(canvas.width - DRAW_KEYBOARD_WIDTH,note_w*100);
-        rect(side_x,y,draw_note_w,h)
-        strokeWeight(1)
+        pg.rect(side_x,y,draw_note_w,h)
+        pg.strokeWeight(1)
         side_x += note_w*100
       }
       
@@ -151,7 +174,7 @@ function draw() {
   drawNoteLineView(G_NoteAnalysis, offsetTime);
   
   // 鍵盤描画
-  stroke(1);
+  pg.stroke(1);
   note = DefaultNoteNumber;
   y = 0;
   let key_h = DRAW_KEYBOARD_HEIGHT;
@@ -175,49 +198,30 @@ function draw() {
       let isEmit = KeyboardStatus[note] != null; // 発火中
       if(isEmit){
         if(isBlackKeyboard) {
-          fill(TRACK_COLORS[KeyboardStatus[note]])
-          rect(x,y,w,key_h);
-          fill(white)
+          pg.fill(TRACK_COLORS[KeyboardStatus[note]])
+          pg.rect(x,y,w,key_h);
+          pg.fill(white)
         }
         else{
-          fill(TRACK_COLORS[KeyboardStatus[note]])
-          rect(x,y,w,key_h);
-          fill(black)
+          pg.fill(TRACK_COLORS[KeyboardStatus[note]])
+          pg.rect(x,y,w,key_h);
+          pg.fill(black)
         }
       }
       else{
         if(isBlackKeyboard) {
-          fill(black)
-          rect(x,y,w,key_h);
-          fill(white)
+          pg.fill(black)
+          pg.rect(x,y,w,key_h);
+          pg.fill(white)
         }
         else{
-          fill(white);
-          rect(x,y,w,key_h);
-          fill(black)
+          pg.fill(white);
+          pg.rect(x,y,w,key_h);
+          pg.fill(black)
         }
       }
       
-      noStroke();
-      textStyle(BOLD);
-      textSize(10);
-      fill(color(20,20,120));
-      textAlign(RIGHT,CENTER);
-      let noteStr = ""
-      switch(ScetchSettings.DrawNoteNumberType){
-        case "note":{
-          noteStr = mtoco(note);
-        }break;
-        case "number":{
-          noteStr = "" + note;
-        }break;
-        default:{
-          
-        }
-      }
-      if(mtoc(note) !== "C") noteStr = "";
-      text(noteStr, x + w - 4, y+key_h/2);
-      stroke(1);
+      drawNoteLabel(note, x + w - 4, y+key_h/2, true);
       
       y += add_y;
       note -= 1;
@@ -237,6 +241,10 @@ function draw() {
 
   updateWaveDrawers();
 
+  pg.pop();
+
+  postProcess.draw();
+
 }
 
 function drawAnalysis(analysis, offsetTime){
@@ -254,12 +262,6 @@ function drawAnalysis(analysis, offsetTime){
       let duration = note.duration /* 音符の長さ */ * (note.quantize /* 音の長さ倍率 */ / 100);
       let noteLength = note.length;
       let length8 = noteLength * 2; // 8分音符が1マスの大きさ
-      if(note.slur){
-        note.slur.forEach(s => {
-          duration += s.duration;
-          length8 += (s.duration / baseTime);
-        });
-      }
       // 音が鳴っているか
       if(noteTime <= offsetTime && offsetTime <= noteTime + duration ) {
         rangeIn = true;
@@ -270,8 +272,31 @@ function drawAnalysis(analysis, offsetTime){
       else{
         if(getNoteX((noteTime - offsetTime) / baseTime) < 0) continue;
       }
-      let right = drawNote(note.trackNumber, offsetTime, noteTime , note.noteNumber + note.key, length8, baseTime);
+      let right = 0;
+      right = drawNote(note.trackNumber, offsetTime, noteTime , note.noteNumber + note.key, length8, baseTime, rangeIn);
+      drawNoteLabel(note.noteNumber + note.key, getNoteX((noteTime - offsetTime) / baseTime) + 2, getNoteY(note.noteNumber + note.key) + DRAW_KEYBOARD_HEIGHT / 2, false, LEFT, color(0,0,0));
       if(right >= canvas.width) break;
+      
+      if(note.slur){
+        let slurTime = noteTime + duration
+        let prevX = getNoteX((noteTime - offsetTime) / baseTime);
+        let prevY = getNoteY(note.noteNumber + note.key);
+        note.slur.forEach(s => {
+          duration += s.duration;
+          right = drawNote(note.trackNumber, offsetTime, slurTime , s.noteNumber + note.key, (s.duration / baseTime), baseTime, rangeIn);
+          drawNoteLabel(s.noteNumber + note.key, getNoteX((slurTime - offsetTime) / baseTime) + 2, getNoteY(s.noteNumber + note.key) + DRAW_KEYBOARD_HEIGHT / 2, false, LEFT, color(0,0,0));
+          /*
+          fill(TRACK_COLORS[note.trackNumber])
+          let nextX = getNoteX((slurTime - offsetTime) / baseTime)
+          let nextY = getNoteY(s.noteNumber + note.key)
+          line(prevX, prevY, nextX, nextY)
+          prevX = nextX
+          prevY = nextY
+          */
+          slurTime += s.duration
+        });
+      }
+
     }
   }
   return true;
@@ -285,18 +310,46 @@ function getNoteY(noteNumber){
   return (DefaultNoteNumber - noteNumber) * DRAW_NOTE_HEIGHT
 }
 
-function drawNote(trackNumber, offsetTime, noteTime, noteNumber, length, oneNoteTime){
+function drawNote(trackNumber, offsetTime, noteTime, noteNumber, length, oneNoteTime, rangeIn){
   let startPos = (noteTime - offsetTime) / oneNoteTime;
   let widthRate = length; // 8/8
   let noteColor = TRACK_COLORS[trackNumber];
+  if(rangeIn) noteColor = color(red(noteColor) + 75,green(noteColor) + 75,blue(noteColor) + 75);
   let w = DRAW_NOTE_WIDTH * widthRate;
   let h = DRAW_NOTE_HEIGHT;
   let x = getNoteX(startPos);
   let y = getNoteY(noteNumber);
-  fill(noteColor)
-  rect(x,y,w,h)
+  pg.fill(noteColor)
+  pg.rect(x,y,w,h)
   //console.log("drawNote:" + x+","+y+","+w+","+h)
   return x + w // 右端の座標を返す
+}
+
+function drawNoteLabel(note, x,y, isOnlyC, align, col){
+  if(!col) col = color(20,20,120);
+  if(!align) align = RIGHT;
+  pg.noStroke();
+  //pg.textStyle(BOLD);
+  pg.textSize(12);
+  pg.textFont(bitFont);
+  pg.fill(col);
+  pg.textAlign(align,CENTER);
+  let noteStr = ""
+  switch(ScetchSettings.DrawNoteNumberType){
+    case "note":{
+      noteStr = mtoco(note);
+    }break;
+    case "number":{
+      noteStr = "" + note;
+    }break;
+    default:{
+      
+    }
+  }
+  if(isOnlyC && mtoc(note) !== "C") noteStr = "";
+  pg.text(noteStr, x, y-1);
+  // text(noteStr, x + w - 4, y+key_h/2);
+  pg.stroke(1);
 }
 
 function drawUpdate(){
@@ -353,6 +406,10 @@ function initNoteLineView(){
   repeatStartLineView = new NoteLine(2,DRAW_NOTE_CANVAS_HEIGHT, color(255,255,255));
   repeatEndLineView = new NoteLine(2,DRAW_NOTE_CANVAS_HEIGHT, color(255,255,255));
   playLineView = new NoteLine(1, DRAW_NOTE_CANVAS_HEIGHT, color(255,255,255));
+  splitLineViews = [];
+  for(let i = 0; i < 100; ++i){
+    splitLineViews.push(new NoteLine(1, DRAW_NOTE_CANVAS_HEIGHT, color(255,255,255,60)));
+  }
 }
 function drawNoteLineView(analysis, offsetTime){
   let start = getRepeatStartTime();
@@ -372,19 +429,72 @@ function drawNoteLineView(analysis, offsetTime){
   
   // 再生範囲だけを明るくする
   {
-    fill(0,0,0,64)
+    pg.fill(0,0,0,64)
     if(start_x > 0){
-      rect(DRAW_KEYBOARD_WIDTH,0,start_x-DRAW_KEYBOARD_WIDTH,DRAW_NOTE_CANVAS_HEIGHT);
+      pg.rect(DRAW_KEYBOARD_WIDTH,0,start_x-DRAW_KEYBOARD_WIDTH,DRAW_NOTE_CANVAS_HEIGHT);
     }
     if(end_x+2 < canvas.width){
-      rect(end_x+2,0,canvas.width - end_x,DRAW_NOTE_CANVAS_HEIGHT);
+      pg.rect(end_x+2,0,canvas.width - end_x,DRAW_NOTE_CANVAS_HEIGHT);
     }
   }
+
+  drawNoteSplitLineView(analysis, offsetTime);
 
   playLineView.x = canvas.width / 2;
   playLineView.draw();
 
 }
+function drawNoteSplitLineView(analysis, offsetTime){
+  let start = 0;
+  let end = getRepeatEndTime();
+  let current = offsetTime;
+  let oneNoteTime = analysis.getOneNoteTime();
+  
+  let start_x = getNoteX((start - offsetTime) / oneNoteTime);
+  let end_x = getNoteX((end - offsetTime) / oneNoteTime);
+
+  repeatStartLineView.draw();
+  repeatEndLineView.draw();
+
+  let now_x = start_x;
+  let index = 0;
+  let sumIndex = 0;
+  while(now_x <= end_x && now_x <= canvas.width && index < splitLineViews.length){
+    for(let i = 0; i < 4; ++i){
+      if(now_x >= 0 && index < splitLineViews.length){
+        let view = splitLineViews[index];
+        view.visible = true;
+        view.x = now_x;
+        view.color = i == 0 ? color(0,0,0,120) : color(0,0,0,30);
+        view.draw();
+        index++;
+        if(i == 0){
+          drawLineLabel("" +  Math.floor(sumIndex / 4 + 0.2) ,now_x + 4, -2);
+        }
+      }
+      sumIndex++;
+      now_x += DRAW_NOTE_WIDTH;
+    }
+  }
+
+  for(let i = index; i < splitLineViews.length; ++i){
+    let view = splitLineViews[index];
+    view.visible = false;
+    view.draw();
+  }
+
+}
+function drawLineLabel(str, x,y, col){
+  if(!col) col = color(255,255,255,120);
+  pg.noStroke();
+  pg.textSize(12);
+  pg.textFont(bitFont);
+  pg.fill(col);
+  pg.textAlign(LEFT,TOP);
+  pg.text(str, x, y);
+  pg.stroke(1);
+}
+
 function setRepeatStartTime(time){
   repeatStartTime = time;
 }
@@ -435,4 +545,8 @@ function onChangeNoteScrollEnded(x,y){
 }
 function getNoteSliderValue(){
   return rightScrollViewValue;
+}
+function isVisibleTrack(trackNumber){
+  if(trackNumber<TrackVisibleSettings.length) return TrackVisibleSettings[trackNumber];
+  return false;
 }

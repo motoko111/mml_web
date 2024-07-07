@@ -44,8 +44,8 @@ class ScrollHelper{
     }
     draw(){
         // 背景を描画
-        fill(this.backColor);
-        rect(this.x,this.y,this.w,this.h);
+        pg.fill(this.backColor);
+        pg.rect(this.x,this.y,this.w,this.h);
         // スクロールの割合に沿った大きさを求める
 
         // スクロールの割合に沿った開始位置を求める
@@ -54,8 +54,8 @@ class ScrollHelper{
         let front_w = this.front_rect.w;
         let front_h = this.front_rect.h;
         // つまみ部分を描画
-        fill(this.frontColor[this.state]);
-        rect(front_x,front_y,front_w,front_h);
+        pg.fill(this.frontColor[this.state]);
+        pg. rect(front_x,front_y,front_w,front_h);
         // つまみ部分の情報更新
         this.front_rect.x = front_x;
         this.front_rect.y = front_y;

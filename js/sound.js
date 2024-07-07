@@ -21,7 +21,7 @@ class TrackSound
             let dt = getCurrentTime()-_this.time;
             _this.time = getCurrentTime();
             _this.data.tick(dt);
-        }, 100);
+        }, 20);
     }
 
     // 再生準備が完了しているか
@@ -37,6 +37,28 @@ class TrackSound
     playNote(e){
         try{
             if(this.data == null) return;
+            if(e.baseTone !== null && this.data.type !== e.baseTone){
+                // 楽器変更
+                let createData = (tone) => {
+                    if(tone){
+                        switch(tone.toLowerCase()){
+                            case "pulse": return new TrackSoundPulse();
+                            case "wave": return new TrackSoundWave();
+                            case "noise": return new TrackSoundNoise();
+                            case "sample": return new TrackSoundSource();
+                        }
+                    }
+                }
+                let newData = createData(e.baseTone);
+                if(newData){
+                    if(this.data ){
+                        this.data.dispose();
+                    }
+                    console.log("change base tone " + this.data.type + "=>" + newData.type);
+                    this.data = newData;
+                }
+                
+            }
             if(this.data.notPlayMute() && e.mute) {
                 // console.log("notPlayMute mute " + mtoco(e.noteNumber));
                 return;
@@ -76,9 +98,15 @@ class TrackSoundData
         this.isActivePlay = false;
         this.lastPlayInfo = null;
         this.onTick = null;
+        this.type = null;
 
+        this.reset();
+    }
+    
+    reset(){
         this.vibrato = {frequency:0,depth:0};
         this.reverb = {decay:0.001,preDelay:0};
+        this.filter = {low:{freq:0,gain:1,q:1},mid:{gain:1},high:{freq:440*Math.pow(2,20),gain:1,q:1}};
     }
 
     getParam(params, index, defaultvalue, min, max){
@@ -132,6 +160,19 @@ class TrackSoundData
         //rev.decay = Math.max(0.001, params.decay); // リバーブの減衰時間（秒）
         //rev.preDelay = Math.max(0.001, params.preDelay); // プリディレイ（秒）
     }
+    setFilter(filter, params){
+        if(!filter) return;
+        if(!params) return;
+        filter.setFreq(this.filter.low.freq,this.filter.high.freq);
+        filter.setQ(this.filter.low.q, this.filter.high.q);
+        // console.log(this.filter);
+    }
+    setEffects(info, t0, e){
+        this.setEnvelope(info.env, e.envelope);
+        this.setVibrato(info.vib, t0, this.vibrato);
+        this.setReverb(info.rev, this.reverb);
+        this.setFilter(info.filter, this.filter);
+    }
     setCommands(info, t0, commands){
         if(!commands) return;
         for(let i = 0; i < commands.length;++i){
@@ -156,14 +197,24 @@ class TrackSoundData
                 this.reverb.decay = this.getParam(command.value, 0, 0.001);
                 this.reverb.preDelay = this.getParam(command.value, 1, 0);
             }break;
+            // フィルター
+            case "f":{
+                let noteNumber = toNoteNumber(this.getParam(command.value, 0, 0));
+                this.filter.low.freq = noteNumber > -1000 ? mtof(noteNumber) : this.getParam(command.value, 2, 0);
+                this.filter.low.q = this.getParam(command.value, 1, 0);
+
+                noteNumber = toNoteNumber(this.getParam(command.value, 2, 0));
+                this.filter.high.freq = noteNumber > -1000 ? mtof(noteNumber) : this.getParam(command.value, 2, 440 * Math.pow(2,20));
+                this.filter.high.q = this.getParam(command.value, 3, 0);
+            }break;
         }
     }
 
-    connect(start,next){
+    connect(start, next, last){
         if(start,!next) return start;
-        if(!start && next) return next;
+        if(!start && next) return last ? last : next;
         if(start && next) start.connect(next);
-        return next;
+        return last ? last : next;
     }
 
     setConnect(info){
@@ -172,15 +223,26 @@ class TrackSoundData
         node = this.connect(node, info.bufferSorce);
         let baseNode = node;
         info.baseConnectNode = null;
+        node = this.connect(node, info.filter.getRootNode(), info.filter.getLastNode());
+        if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
         node = this.connect(node, info.vib);
         if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
         //node = this.connect(node, info.rev);
         if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
-        node = this.connect(node, info.env);
-        if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
         node = this.connect(node, info.waveform);
         if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
+        node = this.connect(node, info.env);
+        if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
         if(node) node.toDestination();
+        info.lastNode = node;
+    }
+
+    createEffects(info){
+        info.env = new Tone.AmplitudeEnvelope();
+        info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
+        info.vib = new Tone.Vibrato();
+        info.rev = new Tone.Reverb();
+        info.filter = new SoundFilter();
     }
 
     calcPlayNoteRate(noteNumber){
@@ -218,27 +280,20 @@ class TrackSoundData
     playNote(e){
     }
 
-    reset(){
-        if(this.vibrato){
-            this.vibrato.frequency = 0;
-            this.vibrato.depth = 0;
-        }
-    }
-
     createPlayInfo(){
         let info = {}
         return info
     }
 
     stopPlayInfo(info){
-        console.log("stopPlayInfo default");
+        //console.log("stopPlayInfo default");
         info.isActive = false;
     }
 
     stopPlayInfoAll(){
         for(let i = 0; i < this.playInfos.length; ++i){
             if(this.playInfos[i].isActive){
-                console.log("stopPlayInfo=" + i);
+                // console.log("stopPlayInfo=" + i);
                 this.stopPlayInfo(this.playInfos[i]);
             }
         }
@@ -304,21 +359,24 @@ class TrackSoundData
         if(!targetInfo.isActive || !targetInfo.waveform) return null;
         return targetInfo.waveform.getValue(); // 最後に再生したデータの波形データを返す
     }
+
+    dispose(){
+        this.stopPlayInfoAll();
+        this.playInfos = [];
+    }
 }
 
 class TrackSoundPulse extends TrackSoundData
 {
     constructor(){
         super();
+        this.type = "pulse";
     }
 
     createPlayInfo(){
         let info = {}
         info.osc = new Tone.PulseOscillator();
-        info.env = new Tone.AmplitudeEnvelope();
-        info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
-        info.vib = new Tone.Vibrato();
-        info.rev = new Tone.Reverb();
+        this.createEffects(info);
         this.setConnect(info);
         let _this = this;
         info.onended = function(){
@@ -335,8 +393,9 @@ class TrackSoundPulse extends TrackSoundData
         info.isActive = false;
         info.playCount = Math.max(0,  info.playCount - 1);
         info.osc.stop();
-        console.log("stopPlayInfo osc stop");
-        console.log(info.osc);
+        //console.log("stopPlayInfo osc stop");
+        //console.log(info.osc);
+        //if(info.lastNode) info.lastNode.disconnect();
     }
 
     playNote(e){
@@ -354,15 +413,13 @@ class TrackSoundPulse extends TrackSoundData
             return;
         }
 
-        this.setEnvelope(info.env, e.envelope);
-        this.setVibrato(info.vib, t0, this.vibrato);
-        this.setReverb(info.rev, this.reverb);
+        this.setEffects(info, t0, e);
 
         info.osc.width.setValueAtTime(PULSE_TYPES[e.tone], t0 + WAIT_SEC);
         info.osc.frequency.setValueAtTime(note, t0 + WAIT_SEC);
         let addTime = this.setSlur(info.osc.frequency, e.slur, t0 + WAIT_SEC, time, e.key);
         time += addTime;
-        t1 = t0 + time;
+        t1 = t0 + time + info.env.release;
         info.osc.start(t0 + WAIT_SEC);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.osc.stop(t1 + WAIT_SEC);
@@ -378,6 +435,7 @@ class TrackSoundWave extends TrackSoundData
         this.defaultWaveSize = 16
         this.waveUpdateTime = 0;
         this.oscWaves = this.createWave();
+        this.type = "wave";
     }
 
     createWaveBuffer(duration) {
@@ -399,10 +457,7 @@ class TrackSoundWave extends TrackSoundData
         let info = {}
         info.waveUpdateTime = -9999;
         info.waveBuffer = this.createWaveBuffer(1);
-        info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
-        info.vib = new Tone.Vibrato();
-        info.rev = new Tone.Reverb();
-        info.env = new Tone.AmplitudeEnvelope();
+        this.createEffects(info);
         // ちょうどよく割り切れる数を探す
         let div = 2;
         for(let i = 2; i <= 20; ++i){
@@ -416,10 +471,11 @@ class TrackSoundWave extends TrackSoundData
     stopPlayInfo(info){
         if(info.bufferSorce != null){
             info.bufferSorce.stop();
-            info.bufferSorce.disconnect(info.baseConnectNode);
+            info.bufferSorce.disconnect();
         }
         info.isActive = false;
         info.bufferSorce = null;
+        //if(info.lastNode) info.lastNode.disconnect();
     }
 
     getWaveValue(n){
@@ -493,9 +549,7 @@ class TrackSoundWave extends TrackSoundData
         info.bufferSorce.loop = true;
         this.setConnect(info);
         
-        this.setEnvelope(info.env, e.envelope);
-        this.setVibrato(info.vib, t0, this.vibrato);
-        this.setReverb(info.rev, this.reverb);
+        this.setEffects(info, t0, e);
 
         let notePlayRate = this.calcPlayNoteRate(e.noteNumber + e.key); // A4からの周波数倍率
         // samplerate / 1Hzのサンプル数 = デフォルトの周波数
@@ -510,8 +564,8 @@ class TrackSoundWave extends TrackSoundData
                 return this.calcPlayNoteRate(noteNumber) * defaultHzPlayRate;
             });
             time += addTime;
-            t1 = t0 + time;
         }
+        t1 = t0 + time + info.env.release;
         info.bufferSorce.start(t0 + WAIT_SEC);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.bufferSorce.stop(t1 + WAIT_SEC);
@@ -598,15 +652,13 @@ class TrackSoundNoise extends TrackSoundData
         super();
         this.longBuffer = new Tone.Buffer(LONG_NOISE_BUFFER);
         this.shortBuffer = new Tone.Buffer(SHORT_NOISE_BUFFER);
+        this.type = "noise";
     }
 
     createPlayInfo(){
         let info = {}
         info.bufferSorce = null;
-        info.env = new Tone.AmplitudeEnvelope();
-        info.vib = new Tone.Vibrato();
-        info.rev = new Tone.Reverb();
-        info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
+        this.createEffects(info);
         let _this = this
         info.onended = function(){
             _this.stopPlayInfo(info);
@@ -617,10 +669,11 @@ class TrackSoundNoise extends TrackSoundData
     stopPlayInfo(info){
         if(info.bufferSorce != null){
             info.bufferSorce.stop();
-            info.bufferSorce.disconnect(info.baseConnectNode);
+            info.bufferSorce.disconnect();
         }
         info.isActive = false;
         info.bufferSorce = null;
+        //if(info.lastNode) info.lastNode.disconnect();
     }
 
     playNote(e){
@@ -648,9 +701,7 @@ class TrackSoundNoise extends TrackSoundData
         info.bufferSorce.loop = true;
         this.setConnect(info);
 
-        this.setEnvelope(info.env, e.envelope);
-        this.setVibrato(info.vib, t0, this.vibrato);
-        this.setReverb(info.rev, this.reverb);
+        this.setEffects(info, t0, e);
 
         let notePlayRate = Math.pow(2,(e.noteNumber - 69 + e.key) / 12); // A4からの周波数倍率
         const sampleRate = Tone.context.sampleRate;
@@ -665,8 +716,8 @@ class TrackSoundNoise extends TrackSoundData
                 return this.calcPlayNoteRate(noteNumber) * ((NES_CLOCK_COUNT / 202) / sampleRate);
             });
             time += addTime;
-            t1 = t0 + time;
         }
+        t1 = t0 + time + info.env.release;
         info.bufferSorce.start(t0 + WAIT_SEC);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.bufferSorce.stop(t1 + WAIT_SEC);
@@ -680,15 +731,13 @@ class TrackSoundSource extends TrackSoundData
 {
     constructor(){
         super();
+        this.type = "sample";
     }
 
     createPlayInfo(){
         let info = {}
         info.bufferSorce = null;
-        info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
-        info.vib = new Tone.Vibrato();
-        info.rev = new Tone.Reverb();
-        info.env = new Tone.AmplitudeEnvelope();
+        this.createEffects(info);
         let _this = this
         info.onended = function(){
             _this.stopPlayInfo(info);
@@ -699,10 +748,11 @@ class TrackSoundSource extends TrackSoundData
     stopPlayInfo(info){
         if(info.bufferSorce != null){
             info.bufferSorce.stop();
-            info.bufferSorce.disconnect(info.baseConnectNode);
+            info.bufferSorce.disconnect();
         }
         info.isActive = false;
         info.bufferSorce = null;
+        //if(info.lastNode) info.lastNode.disconnect();
     }
 
     playNote(e){
@@ -732,9 +782,7 @@ class TrackSoundSource extends TrackSoundData
         info.bufferSorce.loop = false;
         this.setConnect(info);
 
-        this.setEnvelope(info.env, envelope);
-        this.setVibrato(info.vib, t0, this.vibrato);
-        this.setReverb(info.rev, this.reverb);
+        this.setEffects(info, t0, e);
 
         let notePlayRate = Math.pow(2,(e.noteNumber - 69 + e.key) / 12); // A4からの周波数倍率
         let playbackRate = 1.0 * notePlayRate;
@@ -744,8 +792,8 @@ class TrackSoundSource extends TrackSoundData
                 return this.calcPlayNoteRate(noteNumber);
             });
             time += addTime;
-            t1 = t0 + time;
         }
+        t1 = t0 + time + info.env.release;
         // e.playbackTime + e.duration + e.slurDuration
         let offset = getCurrentTime() - t0;
         offset = Math.max(offset, 0);
@@ -756,62 +804,3 @@ class TrackSoundSource extends TrackSoundData
         this.setPlayInfoTime(info, t0 + WAIT_SEC, t1 + WAIT_SEC);
     }
 }
-
-/*
-class TrackSoundPlayer extends TrackSoundData
-{
-    constructor(){
-        super();
-        let info = this.getOrCreatePlayInfo();
-        info.isActive = false;
-        this.playerInfo = info;
-    }
-
-    isLoaded(){
-        if(this.playerInfo) return this.playerInfo.player.loaded;
-        return false;
-    }
-
-    createPlayInfo(){
-        let info = {}
-        info.player = new Tone.Player({
-            url:"/assets/audio/100_saigetsu_lsdj.mp3",
-            // url:'/assets/audio/knoc.wav',
-            autostart:false,
-            onload: function(){
-                info.duration = info.player.buffer.duration; // 曲の長さ
-            }
-        });
-        info.waveform = new Tone.Waveform(WAVE_FORM_SIZE);
-        info.filter = new Tone.Filter(440, "bandpass");
-        let _this = this
-        info.onended = function(){
-            _this.stopPlayInfo(info);
-        }
-        return info;
-    }
-
-    stopPlayInfo(info){
-        info.isActive = false;
-        if (info.player && info.player.state === 'started') {
-            info.player.stop();
-        }
-    }
-
-    playNote(e){
-        var t0 = e.playbackTime;// 再生開始時間
-        let info = this.getOrCreatePlayInfo();
-        var t1 = info.duration + e.playbackTime;
-        var volume = (e.velocity / 128); // 倍率 // db -60:ほぼ無音 0:最大音量
-
-        if(info.player.loaded){
-            info.player.connect(info.waveform);
-            info.waveform.toDestination();
-            info.player.start(t0 + WAIT_SEC, Math.min(info.duration, Math.max(0, getCurrentTime() - t0)));
-            info.player.volume.setValueAtTime(-16 + volume * 16, t0);
-    
-            this.setPlayInfoTime(info, t0 + WAIT_SEC, t1 + WAIT_SEC);
-        }
-    }
-}
-*/

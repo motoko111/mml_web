@@ -9,9 +9,9 @@ class NoteLine {
     }
     draw(){
         if(!this.visible) return;
-        noStroke();
-        fill(this.color);
-        rect(this.x,this.y,this.w,this.h);
+        pg.noStroke();
+        pg.fill(this.color);
+        pg.rect(this.x,this.y,this.w,this.h);
     }
     setPosition(x,y){
         this.x = x;

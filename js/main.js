@@ -137,27 +137,32 @@ function download(){
 }
 
 function exportFile(){
-  const constgetNewFileHandle = async () => {
-      // ファイル保存ダイアログを表示して FileSystemFileHandle オブジェクトを取得
-    const fh = await window.showSaveFilePicker({ suggestedName: mmlFilePath == null ? "export.mml" : mmlFilePath });
-    
-    // FileSystemWritableFileStream オブジェクトを取得
-    const stream = await fh.createWritable();
+  exportFileAsync();
+}
+
+const exportFileAsync = async () => {
+  try{
+  // ファイル保存ダイアログを表示して FileSystemFileHandle オブジェクトを取得
+  const fh = await window.showSaveFilePicker({ suggestedName: mmlFilePath == null ? "export.mml" : mmlFilePath });
+
+  // FileSystemWritableFileStream オブジェクトを取得
+  const stream = await fh.createWritable();
   
-    // テキストデータの Blob オブジェクトを生成
-    const content = mmlEditor.editor.getValue();
-    const blob = new Blob([content], { type: 'text/plain' });
+  // テキストデータの Blob オブジェクトを生成
+  const content = mmlEditor.editor.getValue();
+  const blob = new Blob([content], { type: 'text/plain' });
+
+  // テキストデータをファイルに書き込む
+  await stream.write(blob);
   
-    // テキストデータをファイルに書き込む
-    await stream.write(blob);
+  // ファイルを閉じる
+  await stream.close();
   
-    // ファイルを閉じる
-    await stream.close();
-  
-    // 保存されたファイルのファイル名をコンソールに出力
-    console.log(fh.name);
+  // 保存されたファイルのファイル名をコンソールに出力
+  console.log(fh.name);
   }
-  constgetNewFileHandle();
+  catch(e){
+  }
 }
 
 function loadFile(txt){
@@ -281,11 +286,15 @@ function play(mml, startTimeRate) {
 
       var config = { context: Tone.context };
       mmlEmitter = new MMLEmitter(mml, config);
+      //console.log(new MMLParser(mml).getJSON());
       G_NoteAnalysis.analysis(mml, config);
     
       mmlEmitter.on("note", function(e) {
         if(e.playbackTime + e.duration + e.slurDuration < getCurrentTime()){
           // console.log("cut NOTE: " + JSON.stringify(e));
+          return;
+        }
+        if(!isVisibleTrack(e.trackNumber)){
           return;
         }
         mmlEditor.soundLog(e.trackNumber, mtoco(e.noteNumber + e.key) + " ");
@@ -299,6 +308,10 @@ function play(mml, startTimeRate) {
       });
     
       let startTime = G_NoteAnalysis.getDuration() * startTimeRate;
+      if(isSetRepeatEndTime() && startTime >= getRepeatEndTime()){
+        rewind();
+        return;
+      }
 
       this.mutePlay(mml, startTime);
 
@@ -366,23 +379,27 @@ function editPlay(mml, playLine){
         }
         else{
           if(lastNote != null){
-            notes.forEach(note => {
-              if(note == lastNote) return;
+            G_EditNoteAnalysis.clear();
+            let lag = 0.1;
+
+            for(let i = 0; i < notes.length - 1; ++i){
+              let note = notes[i];
+              //console.log(JSON.stringify(note));
               note.mute = true;
               playEditNote(note);
-            });
+            }
 
-            G_EditNoteAnalysis.clear();
             playEditEmitterStartTime = Tone.context.currentTime
             lastNote.mute = false;
-            lastNote.playbackTime = Tone.context.currentTime;
+            lastNote.playbackTime = Tone.context.currentTime + lag;
             lastNote.currentLength = 0;
             //lastNote.chord = true;
             //console.log(lastNote)
             G_EditNoteAnalysis.add(playEditEmitterStartTime, JSON.parse(JSON.stringify(lastNote)));
             mmlEditor.setLastEditorPlayNote(JSON.parse(JSON.stringify(lastNote)));
-            lastEditNote = JSON.parse(JSON.stringify(lastNote));
             playEditNote(lastNote);
+
+            lastEditNote = JSON.parse(JSON.stringify(lastNote));
           }
         }
 
@@ -476,6 +493,7 @@ function updateWaveDrawers(){
       let drawer = waveDrawers[i];
       let track = editTracks[i];
       drawer.setWaveData(track.getWaveformValue());
+      drawer.setColor(red(TRACK_COLORS[i]),green(TRACK_COLORS[i]),blue(TRACK_COLORS[i]));
       drawer.draw();
     }
   }else{
@@ -483,6 +501,7 @@ function updateWaveDrawers(){
       let drawer = waveDrawers[i];
       let track = tracks[i];
       drawer.setWaveData(track.getWaveformValue());
+      drawer.setColor(red(TRACK_COLORS[i]),green(TRACK_COLORS[i]),blue(TRACK_COLORS[i]));
       drawer.draw();
     }
   }
