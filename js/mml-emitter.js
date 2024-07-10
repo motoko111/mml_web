@@ -1010,6 +1010,7 @@ exports["default"] = {
   wave: null,
   slur: null,
   mute: false,
+  detune: 0,
 };
 module.exports = exports["default"];
 },{}],19:[function(require,module,exports){
@@ -1061,6 +1062,7 @@ var MMLIterator = (function () {
     this._key = _DefaultParams2["default"].key;
     this._envelope = _DefaultParams2["default"].envelope;
     this._baseTone = _DefaultParams2["default"].baseTone;
+    this._detune = _DefaultParams2["default"].detune;
     this._command = JSON.parse(JSON.stringify(_DefaultParams2["default"].command));
     this._mute = _DefaultParams2["default"].mute;
     this._wave = _DefaultParams2["default"].wave;
@@ -1330,6 +1332,7 @@ var MMLIterator = (function () {
       var length = this._lastNoteLength / 128 * 4; // 4/4のときの長さ
       var envelope = this._envelope;
       var baseTone = this._baseTone;
+      var detune = this._detune;
       var cmd = this._command;
       var mute = this._mute;
       var wave = this._wave;
@@ -1378,6 +1381,7 @@ var MMLIterator = (function () {
           currentLength:currentLength,
           envelope:envelope,
           baseTone:baseTone,
+          detune:detune,
           chord:noteNumbers.length > 1,
           commands:cmd,
           mute:mute,
@@ -1451,6 +1455,12 @@ var MMLIterator = (function () {
     key: _Syntax2["default"].BaseTone,
     value: function value(command) {
       this._baseTone = command.value !== null ? command.value : _DefaultParams2["default"].baseTone;
+    }
+  },
+  {
+    key: _Syntax2["default"].Detune,
+    value: function value(command) {
+      this._detune = command.value !== null ? command.value : _DefaultParams2["default"].detune;
     }
   },
   {
@@ -1631,6 +1641,8 @@ var MMLParser = (function () {
           return this.readNoteQuantize();
         case "v":
           return this.readNoteVelocity();
+        case "D":
+          return this.readDetune();
         case "t":
           return this.readTempo();
         case "k":
@@ -1814,8 +1826,19 @@ var MMLParser = (function () {
       };
     }
   },
+  // ==== 追加 ======================================
   {
-    // ==== 追加 ======================================
+    key: "readDetune",
+    value: function readDetune() {
+      this.scanner.expect("D");
+
+      return {
+        type: _Syntax2["default"].Detune,
+        value: this._readArgument(/(\+|\-)?\d+/)
+      };
+    }
+  },
+  {
   key: "readTone",
     value: function readTone() {
       let nextStr = this.scanner.getNext()
@@ -1890,7 +1913,7 @@ var MMLParser = (function () {
         let _this4 = this;
         let isCommand = false
         this._readUntil("]", function () {
-          let val = _this4._readArgument(/\d+(\.\d+)?/);
+          let val = _this4._readArgument(/(\+|\-)?\d+(\.\d+)?/);
           if(val === null) {
             if(isCommand){
               val = _this4._readStr(/([a-z]|[A-Z]|\+|\-|#|[0-9])+/);

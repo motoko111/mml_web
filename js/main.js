@@ -167,6 +167,7 @@ const exportFileAsync = async () => {
 
 function loadFile(txt){
   mmlEditor.editor.setValue(txt, -1);  // -1はカーソルをファイルの先頭に戻す
+  analysisMML(txt);
   drawUpdate();
 }
 

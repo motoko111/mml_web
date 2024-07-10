@@ -27,14 +27,17 @@ class WaveDrawer{
         this.context.lineWidth = 4;
         let waveHeight = this.canvas.height - 10;
         if(this.freqData && this.freqData.length > 0){
+            let startIndex = this.findZeroCrossing(this.freqData, 0);
             let drawLength = 512;
+            let heightRate = 1.5;
             for(let i = 0; i < drawLength; ++i){
+                let index = startIndex + i;
                 let freq = 0; 
-                if(i < this.freqData.length){
-                    freq = this.freqData[i]; // -1 から 1 になるように
+                if(index < this.freqData.length){
+                    freq = this.freqData[index]; // -1 から 1 になるように
                 }
                 const x = Math.floor((i / drawLength) * this.canvas.width);
-                const y = Math.floor((-freq) * (waveHeight/2) + (this.canvas.height / 2));
+                const y = Math.floor(Math.min(1,Math.max(-1,(-freq * heightRate))) * (waveHeight/2) + (this.canvas.height / 2));
                 if(i === 0){
                     this.context.moveTo(x,y);
                 }
@@ -48,6 +51,15 @@ class WaveDrawer{
             this.context.lineTo(this.canvas.width,Math.floor(this.canvas.height / 2));
         }
         this.context.stroke();
+    }
+    // ゼロ交差点を見つける関数
+    findZeroCrossing(values, startIndex) {
+        for (let i = startIndex; i < values.length; i++) {
+            if (values[i] <= 0 && values[i + 1] > 0) {
+                return i;
+            }
+        }
+        return 0; 
     }
     clear(){
         this.context.clearRect(0,0,this.canvas.width, this.canvas.height);

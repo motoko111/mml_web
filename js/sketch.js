@@ -29,7 +29,7 @@ let DRAW_RIGHT_SCROLL_WIDTH = 12; // 右スクロール横幅
 let DefaultNoteNumber = 69 + 12 * 1 + 6 // ノートの基準
 const NOTE_NUMBER_MAX = 69 + 12 * 8;
 const NOTE_NUMBER_MIN = 69 - 12 * 5 - 5 + 12 * 4;
-let TRACK_COLORS = []
+var TRACK_COLORS = []
 
 var TrackVisibleSettings = [true,true,true,true,true,true,true,true,true,true]
 var ScetchSettings = {
