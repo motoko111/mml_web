@@ -178,7 +178,7 @@ function start(){
 }
 
 function rewind(forcePlay){
-  if(isSetRepeatStartTime()){
+  if(isEnableRepeat()){
     repeatRewind(forcePlay);
   }
   else{
@@ -220,6 +220,7 @@ function setRepeatStart(){
     if(getRepeatEndTime() >= 0 && getRepeatStartTime() > getRepeatEndTime()){
       setRepeatEnd();
     }
+    setEnableRepeatMode(true);
   }
 }
 
@@ -229,12 +230,29 @@ function setRepeatEnd(){
     if(getRepeatStartTime() >= 0 && getRepeatEndTime() < getRepeatStartTime()){
       setRepeatStart();
     }
+    setEnableRepeatMode(true);
   }
 }
 
 function resetRepeat(){
   setRepeatStartTime(-1);
   setRepeatEndTime(-1);
+}
+
+function setEnableRepeatMode(flag){
+
+  setEnableRepeat(flag);
+
+  enableButton = document.getElementById("repeatEnableButton");
+  disableButton = document.getElementById("repeatDisableButton");
+  if(flag){
+    enableButton.classList.remove('hidden');
+    disableButton.classList.add('hidden');
+  }
+  else{
+    enableButton.classList.add('hidden');
+    disableButton.classList.remove('hidden');
+  }
 }
 
 function updateIcon(){
@@ -309,7 +327,7 @@ function play(mml, startTimeRate) {
       });
     
       let startTime = G_NoteAnalysis.getDuration() * startTimeRate;
-      if(isSetRepeatEndTime() && startTime >= getRepeatEndTime()){
+      if(isEnableRepeat() && startTime >= getRepeatEndTime()){
         rewind();
         return;
       }
@@ -365,6 +383,7 @@ function editPlay(mml, playLine){
             if(firstPlaybackTime == -1){
               firstPlaybackTime = note.playbackTime;
               firstLength = note.currentLength;
+              // lag = 60 / note.tempo * (4 / 8);
             }
             note.mute = false;
             let dt = (note.playbackTime - firstPlaybackTime);
@@ -645,10 +664,10 @@ function setupMainTick(){
   let tickFunc = () => {
     updateIcon();
     if(isPlayMainEmitter() ){
-      if(isSetRepeatEndTime() && getEmitterCurrentPlayTime() > getRepeatEndTime()){
+      if(isEnableRepeat() && getEmitterCurrentPlayTime() > getRepeatEndTime()){
         repeatRewind();
       } else if(getEmitterCurrentPlayTime() > G_NoteAnalysis.getDuration()){
-        if(isSetRepeatStartTime()){
+        if(isEnableRepeat()){
           repeatRewind();
         }
         else{
@@ -671,6 +690,14 @@ var initPage = async () => {
 
   mmlEditor.initEditor();
   mmlEditor.setPlayEditNoteFunc(editPlay);
+  mmlEditor.setDeleteEditNoteFunc(() => {
+    //console.log("setDeleteEditNoteFunc");
+    analysisMML(mmlEditor.editor.getValue());
+  });
+  mmlEditor.setNormalEditNoteFunc(() => {
+    //console.log("setNormalEditNoteFunc");
+    analysisMML(mmlEditor.editor.getValue());
+  });
 
   if(!loadLocalStorage()){
     await loadFileAsync('mml/template.mml', (txt) => {

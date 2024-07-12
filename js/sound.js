@@ -46,6 +46,7 @@ class TrackSound
                             case "wave": return new TrackSoundWave();
                             case "sin": return new TrackSoundSin();
                             case "tri": return new TrackSoundTriangle();
+                            case "saw": return new TrackSoundSaw();
                             case "noise": return new TrackSoundNoise();
                             case "sample": return new TrackSoundSource();
                         }
@@ -349,6 +350,8 @@ class TrackSoundData
                     for(let j = prevs.length - 1; j >= 0; --j){
                         let prev = prevs[j];
                         if(prev.endTime + 0.1 < getCurrentTime()){
+                            prev.source.disconnect();
+                            prev.source.dispose();
                             prevs.splice(j,1);
                         }
                     }
@@ -422,18 +425,22 @@ class TrackSoundData
             //console.log("stopPlayInfo stop info" + info.bufferSorce)
             info.bufferSorce.stop();
             info.bufferSorce.disconnect();
+            info.bufferSorce.dispose();
         }
         if(info.prevBufferSources && info.prevBufferSources.length > 0) {
             info.prevBufferSources.forEach((prev) => {
                 //console.log("stopPlayInfo stop prev info" + prev)
                 prev.source.stop();
                 prev.source.disconnect();
+                prev.source.dispose();
             });
             info.prevBufferSources.splice(0,info.prevBufferSources.length);
+            //console.log("info.prevBufferSources.length:" + info.prevBufferSources.length)
         }
+        info.prevBufferSource = null;
     }
 
-    getOrCreatePlayInfo(forceGetFirst){
+    getOrCreatePlayInfo(forceGetFirst, startTime){
         let info = null;
         if(forceGetFirst){
             for(let i = 0; i < this.playInfos.length; ++i){
@@ -443,7 +450,7 @@ class TrackSoundData
         }
         else{
             for(let i = 0; i < this.playInfos.length; ++i){
-                if(!this.playInfos[i].isActive){
+                if(!this.playInfos[i].isActive || this.playInfos[i].inactiveTime + 0.1 < startTime){
                     info = this.playInfos[i];
                     break;
                 }
@@ -456,11 +463,12 @@ class TrackSoundData
         }
         info.isActive = true;
         this.lastPlayInfo = info;
-        // console.log("playInfos length:" + this.playInfos.length);
+        //console.log("playInfos length:" + this.playInfos.length + "force:" + forceGetFirst + " index:" + info.index);
         return info;
     }
 
     addPlayInfo(info){
+        info.index = this.playInfos.length;
         this.playInfos.push(info);
     }
 
@@ -534,7 +542,7 @@ class TrackSoundPulse extends TrackSoundData
         var volume = (e.velocity / 128); // 倍率
         var note = mtoco(e.noteNumber + e.key);
 
-        let info = this.getOrCreatePlayInfo(!e.chord);
+        let info = this.getOrCreatePlayInfo(!e.chord, t0 + WAIT_SEC);
 
         this.setCommands(info, t0, e.commands);
         if(e.mute){
@@ -571,6 +579,12 @@ class TrackSoundWave extends TrackSoundData
         this.type = "wave";
     }
 
+    reset(){
+        super.reset();
+        this.waveUpdateTime = 0;
+        this.oscWaves = this.createWave();
+    }
+
     createWaveBuffer(duration) {
         const sampleRate = Tone.context.sampleRate;
         const bufferSize = sampleRate * duration;
@@ -598,6 +612,10 @@ class TrackSoundWave extends TrackSoundData
         }
         // console.log("calc countPerHz div:" + div);
         info.countPerHz = Tone.context.sampleRate / div; // 1Hzあたりのサンプリング数
+        let _this = this
+        info.onended = function(){
+            _this.stopPlayInfo(info);
+        }
         return info;
     }
 
@@ -643,7 +661,7 @@ class TrackSoundWave extends TrackSoundData
         var t1 = t0 + time + 0.5;
         var volume = (e.velocity / 128); // 倍率
 
-        let info = this.getOrCreatePlayInfo(!e.chord);
+        let info = this.getOrCreatePlayInfo(!e.chord, t0 + WAIT_SEC);
 
         this.setCommands(info, t0, e.commands);
 
@@ -708,6 +726,17 @@ class TrackSoundWave extends TrackSoundData
     }
 }
 
+class TrackSoundSaw extends TrackSoundWave
+{
+    constructor(){
+        super();
+        this.type = "saw";
+    }
+    createWave(){
+        return this.getWaveValues([15,15,15,14,14,14,13,13,12,12,11,11,10,10,9,9,8,8,7,7,6,6,5,5,4,4,3,3,2,2,1,1]);
+    }
+}
+
 class TrackSoundTriangle extends TrackSoundWave
 {
     constructor(){
@@ -715,7 +744,7 @@ class TrackSoundTriangle extends TrackSoundWave
         this.type = "tri";
     }
     createWave(){
-        return this.getWaveValues([14,14,13,12,11,10,9,8,7,6,5,4,3,2,2]);
+        return this.getWaveValues([8,8,7,6,5,4,3,2,1,1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,15,14,13,12,11,10,9,8,8]);
     }
 }
 
@@ -727,10 +756,10 @@ class TrackSoundSin extends TrackSoundWave
     }
     createWave(){
         let w = (t) => {
-            return Math.round(Math.sin(Math.PI * 2 * t/(this.defaultWaveSize - 1)) * 7) + 8;
+            return Math.round(Math.sin(Math.PI * 2 * t/(32 - 1)) * 7) + 8;
         }
         let list = []
-        for(let i = 0; i < this.defaultWaveSize; ++i){
+        for(let i = 0; i < 32; ++i){
             list.push(w(i));
         }
         console.log(list);
@@ -798,6 +827,10 @@ class TrackSoundNoise extends TrackSoundData
         this.type = "noise";
     }
 
+    reset(){
+        super.reset();
+    }
+
     createPlayInfo(){
         let info = {}
         info.bufferSorce = null;
@@ -823,7 +856,7 @@ class TrackSoundNoise extends TrackSoundData
         var t1 = t0 + time + 0.5;
         var volume = (e.velocity / 128); // 倍率
 
-        let info = this.getOrCreatePlayInfo(!e.chord);
+        let info = this.getOrCreatePlayInfo(!e.chord, t0 + WAIT_SEC);
 
         this.setCommands(info, t0, e.commands);
         if(e.mute){
@@ -879,6 +912,10 @@ class TrackSoundSource extends TrackSoundData
         this.type = "sample";
     }
 
+    reset(){
+        super.reset();
+    }
+
     createPlayInfo(){
         let info = {}
         info.bufferSorce = null;
@@ -903,11 +940,15 @@ class TrackSoundSource extends TrackSoundData
         var t1 = t0 + time + 0.5;
         var volume = (e.velocity / 128); // 倍率
 
-        let info = this.getOrCreatePlayInfo(!e.chord);
+        console.log(e.chord);
+        let info = this.getOrCreatePlayInfo(!e.chord, t0 + WAIT_SEC);
 
         this.setCommands(info, t0, e.commands);
         if(e.mute){
             info.isActive = false;
+            return;
+        }
+        if(!e.isArpeggio && this.setArpeggio(e)){
             return;
         }
 

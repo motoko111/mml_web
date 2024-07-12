@@ -97,6 +97,7 @@ const createAudioBuffer = async () => {
         ,'assets/audio/002_fly.wav'
         ,'assets/audio/003_cancel2.wav'
         ,'assets/audio/004_tam.wav'
+        ,'assets/audio/005_A4.mp3'
     ]
     for(let i = 0; i < resources.length; ++i){
         let file = resources[i];

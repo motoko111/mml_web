@@ -1,9 +1,10 @@
 
 class NoteAnalysis {
-    constructor(){
+    constructor(isEditMode){
       this.tracks = []
       this.lastNote = null;
       this.lastInfo = null;
+      this.isEditMode = isEditMode == true ? true : false;
     }
     add(startTime, e){
       while(this.tracks.length <= e.trackNumber) this.tracks.push(new NoteAnalysisTrack(e.trackNumber));
@@ -43,6 +44,9 @@ class NoteAnalysis {
         return this.lastInfo.octave ? this.lastInfo.octave : 0;
       }
       return 0;
+    }
+    isEdit(){
+      return this.isEditMode;
     }
     textIndexToTime(index){
       for(let i = 0; i < this.tracks.length; ++i){
@@ -114,5 +118,5 @@ class NoteAnalysis {
       this.notes.push(e)
     }
   }
-  var G_NoteAnalysis = new NoteAnalysis();
-  var G_EditNoteAnalysis = new NoteAnalysis();
+  var G_NoteAnalysis = new NoteAnalysis(false);
+  var G_EditNoteAnalysis = new NoteAnalysis(true);

@@ -10,8 +10,10 @@ class MMLEditor{
     constructor(){
         this.editor = null;
         this.logEditors = [null,null,null,null];
-        this.lastEditNote = null
-        this.playEditNoteFunc = null
+        this.lastEditNote = null;
+        this.playEditNoteFunc = null;
+        this.deleteEditNoteFunc = null;
+        this.normalEditNote = null;
         this.enableEditPlay = false;
         this.lastPlayOctave = 4;
     }
@@ -56,6 +58,12 @@ class MMLEditor{
     }
     setPlayEditNoteFunc(func){
         this.playEditNoteFunc = func
+    }
+    setDeleteEditNoteFunc(func){
+        this.deleteEditNoteFunc = func
+    }
+    setNormalEditNoteFunc(func){
+        this.normalEditNote = func
     }
     // カーソル位置までの文字数を計算する関数
     getTotalCharsBeforeCursor(cursorPosition) {
@@ -179,16 +187,26 @@ class MMLEditor{
         this.editor.session.on('change', function(delta) {
             // delta.start, delta.end, delta.lines, delta.action
             // console.log("editor change" + delta.lines)
-            if(delta.action == "insert"){
-                if(REGEX_NOTE_STR.test(delta.lines[0])){
-                    _this.editPlay(_this.analysisPlayNote(delta.lines[0]), false);
+            try{
+                if(delta.action == "insert"){
+                    if(REGEX_NOTE_STR.test(delta.lines[0])){
+                        _this.editPlay(_this.analysisPlayNote(delta.lines[0]), false);
+                    }
+                    else if(REGEX_NUMBER_STR.test(delta.lines[0])){
+                        _this.editPlay(_this.analysisPlayNote(delta.lines[0]), false);
+                    }
+                    else if(REGEX_TAI_STR.test(delta.lines[0])){
+                        _this.editPlay(_this.analysisPlayNote(delta.lines[0]), false);
+                    }
+                    else{
+                        if(_this.normalEditNote) _this.normalEditNote();
+                    }
                 }
-                if(REGEX_NUMBER_STR.test(delta.lines[0])){
-                    _this.editPlay(_this.analysisPlayNote(delta.lines[0]), false);
+                else if(delta.action == "remove"){
+                    if(_this.deleteEditNoteFunc) _this.deleteEditNoteFunc();
                 }
-                if(REGEX_TAI_STR.test(delta.lines[0])){
-                    _this.editPlay(_this.analysisPlayNote(delta.lines[0]), false);
-                }
+            }catch(e){
+                console.log(e);
             }
             
         });
@@ -202,6 +220,13 @@ class MMLEditor{
             setTimeSliderValue(time/G_NoteAnalysis.getDuration());
         });
         */
+
+        this.setTheme();
+    }
+
+    setTheme(){
+        // テーマを適用
+        this.editor.setTheme("ace/theme/ace-mml");
     }
 
     createLogEditor(track){

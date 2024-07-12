@@ -46,6 +46,7 @@ let repeatStartLineView = null;
 let repeatEndLineView = null;
 let repeatStartTime = -1;
 let repeatEndTime = -1;
+let enableRepeat = false;
 
 let postProcess;
 let bitFont;
@@ -100,7 +101,7 @@ function windowResized() {
 }
 
 function draw() {
-  
+
   background(220);
   translate(-canvas.width / 2,-canvas.height / 2);
 
@@ -108,6 +109,7 @@ function draw() {
   pg.clear();
 
   let offsetTime = getEmitterCurrentPlayTime();
+  let offsetLag = isPlayEditEmitter() ? 0.1 : 0;
   
   let w = DRAW_KEYBOARD_WIDTH;
   let h = DRAW_NOTE_HEIGHT;
@@ -171,7 +173,7 @@ function draw() {
   }
 
   // リピート位置描画
-  drawNoteLineView(G_NoteAnalysis, offsetTime);
+  drawNoteLineView(isDrawAnalysis ? G_NoteAnalysis : G_EditNoteAnalysis, offsetTime - offsetLag);
   
   // 鍵盤描画
   pg.stroke(1);
@@ -377,6 +379,40 @@ function mouseWheel(event) {
   }
 }
 
+function keyPressed(){
+  // canvas外は操作を受け付けない
+  if(0 <= mouseX && mouseX <= canvas.width && 0 <= mouseY && mouseY <= canvas.height + 20){
+    let analysis = G_NoteAnalysis;
+    if (keyCode === LEFT_ARROW || keyCode === RIGHT_ARROW) {
+      let offsetTime = getEmitterCurrentPlayTime();
+      let oneNoteTime = analysis.getOneNoteTime();
+      let rate = oneNoteTime/getEndTime();
+      let offset = (offsetTime%oneNoteTime);
+      let way = keyCode === LEFT_ARROW ? -1 : 1
+      if(Math.abs(offset) < oneNoteTime * 0.1){
+        scrollViewValue += rate * way;
+      }
+      else{
+        if(way < 0) scrollViewValue -= offset/getEndTime();
+        else scrollViewValue += (oneNoteTime-offset)/getEndTime();
+      }
+      updateBottomtScroll();
+    }
+
+    if (keyCode === UP_ARROW) {
+      DefaultNoteNumber -= 1;
+      DefaultNoteNumber = Math.max(NOTE_NUMBER_MIN, DefaultNoteNumber);
+      updateRightScroll();
+    }
+
+    if (keyCode === DOWN_ARROW) {
+      DefaultNoteNumber += 1;
+      DefaultNoteNumber = Math.min(NOTE_NUMBER_MAX, DefaultNoteNumber);
+      updateRightScroll();
+    }
+  }
+}
+
 function resetViewValue(){
   if(!scrollView){
     return;
@@ -384,6 +420,7 @@ function resetViewValue(){
   setTimeSliderValue(0);
   setRepeatStartTime(-1);
   setRepeatEndTime(-1);
+  setEnableRepeat(false);
 }
 
 function initScrollView(){
@@ -447,11 +484,12 @@ function drawNoteLineView(analysis, offsetTime){
 function drawNoteSplitLineView(analysis, offsetTime){
   let start = 0;
   let end = getRepeatEndTime();
-  let current = offsetTime;
+  let last = getEndTime();
   let oneNoteTime = analysis.getOneNoteTime();
-  
+
   let start_x = getNoteX((start - offsetTime) / oneNoteTime);
   let end_x = getNoteX((end - offsetTime) / oneNoteTime);
+  let last_x = getNoteX((last - offsetTime) / oneNoteTime);
 
   repeatStartLineView.draw();
   repeatEndLineView.draw();
@@ -459,7 +497,9 @@ function drawNoteSplitLineView(analysis, offsetTime){
   let now_x = start_x;
   let index = 0;
   let sumIndex = 0;
-  while(now_x <= end_x && now_x <= canvas.width && index < splitLineViews.length){
+  while(now_x <= last_x && now_x <= canvas.width && index < splitLineViews.length){
+    
+    // 細かい線を描画
     for(let i = 0; i < 4; ++i){
       if(now_x >= 0 && index < splitLineViews.length){
         let view = splitLineViews[index];
@@ -468,6 +508,7 @@ function drawNoteSplitLineView(analysis, offsetTime){
         view.color = i == 0 ? color(0,0,0,120) : color(0,0,0,30);
         view.draw();
         index++;
+        // 区切りの太い線
         if(i == 0){
           drawLineLabel("" +  Math.floor(sumIndex / 4 + 0.2) ,now_x + 4, -2);
         }
@@ -477,6 +518,7 @@ function drawNoteSplitLineView(analysis, offsetTime){
     }
   }
 
+  // 細かい線
   for(let i = index; i < splitLineViews.length; ++i){
     let view = splitLineViews[index];
     view.visible = false;
@@ -503,17 +545,33 @@ function setRepeatEndTime(time){
 }
 function getRepeatStartTime(){
   if(!G_NoteAnalysis) return 0;
+  if(!isEnableRepeat()){
+    return 0;
+  }
   return repeatStartTime < 0 ? 0 : repeatStartTime;
 }
 function getRepeatEndTime(){
   if(!G_NoteAnalysis) return -1;
+  if(!isEnableRepeat()){
+    return G_NoteAnalysis.getDuration();
+  }
   return repeatEndTime < 0 ? G_NoteAnalysis.getDuration() : repeatEndTime;
+}
+function getEndTime(){
+  if(!G_NoteAnalysis) return -1;
+  return G_NoteAnalysis.getDuration();
 }
 function isSetRepeatStartTime(){
   return repeatStartTime > 0;
 }
 function isSetRepeatEndTime(){
   return repeatEndTime >= 0;
+}
+function setEnableRepeat(flag){
+  enableRepeat = flag;
+}
+function isEnableRepeat(){
+  return enableRepeat;
 }
 
 function onChangeTimeRateScroll(x,y){
@@ -528,6 +586,10 @@ function getTimeSliderValue(){
 function setTimeSliderValue(value){
   scrollViewValue = value;
   scrollView.setScrollRate(scrollViewValue, 0);
+}
+function updateBottomtScroll(){
+  scrollViewValue = Math.max(0.0, Math.min(1.0, scrollViewValue));
+  scrollView.setScrollRate(scrollViewValue,0);
 }
 
 function onChangeNoteScroll(x,y){

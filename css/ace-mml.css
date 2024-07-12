@@ -1,3 +1,60 @@
-.ace-mml .ace-comment {
-    color: rgb(128, 128, 255);
+
+
+.ace_editor .ace-mml {
+    color: rgba(0,0,0,0.87);
+    background-color: #fafafa;
+}
+
+.ace-mml {
+    color: rgb(216, 216, 238);
+    background-color: rgb(29, 29, 29);
+}
+
+.ace-mml .ace_comment {
+    color: rgb(160, 160, 172);
+}
+.ace-mml .ace_variable {
+    color: rgb(115, 153, 131);
+}
+.ace-mml .ace_inst {
+    color: rgb(235, 145, 194);
+}
+.ace-mml .ace_command {
+    color: rgb(180, 114, 88);
+}
+.ace-mml .ace_note {
+    color: rgb(124, 169, 211);
+}
+.ace-mml .ace_rest {
+    color: rgb(98, 109, 255);
+}
+.ace-mml .ace_number {
+    color: rgb(216, 216, 238);
+}
+.ace-mml .ace_piriod {
+    color: rgb(216, 216, 238);
+}
+.ace-mml .ace_tie {
+    color: rgb(216, 216, 238);
+}
+.ace-mml .ace_octave {
+    color: rgb(216, 216, 238);
+}
+.ace-mml .ace_slur {
+    color: rgb(216, 216, 238);
+}
+.ace-mml .ace_code {
+    color: rgb(216, 216, 238);
+}
+.ace-mml .ace_repeat {
+    color: rgb(216, 216, 238);
+}
+.ace-mml .ace_track {
+    color: rgb(216, 216, 238);
+}
+.ace-mml .ace_string {
+    color: rgb(216, 216, 238);
+}
+.ace-mml .call_variable {
+    color: rgb(83, 142, 160);
 }

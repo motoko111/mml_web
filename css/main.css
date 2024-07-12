@@ -9,6 +9,27 @@ body{
     background-color: rgb(26, 26, 26);
 }
 
+.container {
+    background-color: rgb(26, 26, 26);
+    }
+    
+    .top {
+    background-color: rgb(26, 26, 26);
+    }
+    .content {
+    background-color: rgb(26, 26, 26);
+    }
+    .center {
+    background-color: rgb(26, 26, 26);
+    }
+    .bottom .bottom-left {
+    background-color: rgb(26, 26, 26);
+    }
+    .bottom .bottom-right {
+    background-color: rgb(26, 26, 26);
+    overflow-y: auto; /* 内容が多い場合にスクロール */
+    }
+
 .editor-back {
     background-color: rgb(26, 26, 26);
 }
@@ -52,7 +73,14 @@ body{
     background-color: rgb(124, 74, 74);
 }
 .button-rewind {
-    background-color: rgb(84, 82, 117);
+    background-color: rgb(192, 108, 74);
+}
+.button-repeat-enable {
+    background-color: rgba(50, 50, 50, 1);
+}
+.button-repeat-disable {
+    background-color: rgba(50, 50, 50, 1);
+    opacity: 0.5;
 }
 
 .button img {
@@ -78,7 +106,13 @@ body{
     background-color: rgb(214, 31, 31);
 }
 .button-rewind:hover {
-    background-color: rgb(27, 131, 201);
+    background-color: rgb(252, 140, 95);
+}
+.button-repeat-enable:hover {
+    background-color: rgba(80, 80, 80, 1);
+}
+.button-repeat-disable:hover {
+    background-color: rgba(80, 80, 80, 1);
 }
 
 .button:active {
@@ -97,7 +131,13 @@ body{
     background-color: rgb(104, 15, 15);
 }
 .button-rewind:active {
-    background-color: rgb(27, 21, 107);
+    background-color: rgb(192, 74, 53);
+}
+.button-repeat-enable:active {
+    background-color: rgb(68, 115, 243);
+}
+.button-repeat-disable:active {
+    background-color: rgb(68, 115, 243);
 }
 
 .checkbox-root {
