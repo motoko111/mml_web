@@ -1,13 +1,32 @@
 
 
 .ace_editor .ace-mml {
-    color: rgba(0,0,0,0.87);
-    background-color: #fafafa;
+    color: rgb(216, 216, 238);
+    background-color: rgb(29, 29, 29);
 }
 
 .ace-mml {
     color: rgb(216, 216, 238);
     background-color: rgb(29, 29, 29);
+}
+
+.ace-mml .ace_selection {
+    background: rgba(255, 255, 255, 0.1); /* 半透明の青色 */
+}
+/* アクティブな行の選択範囲 */
+.ace-mml .ace_selected-word {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 検索結果のハイライト */
+.ace-mml .ace_marker-layer .ace_selected-word {
+    background: rgba(255, 254, 208, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* カーソル */
+.ace-mml .ace_cursor {
+    color: rgba(255, 255, 255, 255);
 }
 
 .ace-mml .ace_comment {
