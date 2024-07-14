@@ -166,24 +166,38 @@ class TrackSoundData
         let maxTime = t1;
         let next = t0;
         let _this = this;
+        let n = 0;
+        let loopPoint = -1;
         for(let i = 0; i < len; ++i){
-            next = (i+1)/60 + t0;
-            let isEnd = maxTime <= next;
-            next = isEnd ? maxTime : next;
-            let pitch = this.getParam(params, i, 0, 0); // x/127 20で半音変化 -が高く +が低い
-            let shift = -pitch / 20;
-            _this.freqTimeline.push({
-                type:"liner",
-                value:_this.calcFreq(e.noteNumber + e.key + shift),
-                time:next
-            });
-            if(isEnd) break;
-            if(i == len - 1){
+            let param = this.getParam(params, i, 0, 0);
+            if(param == "L"){
+                loopPoint = i;
+            }
+            else{
+                next = (n+1)/60 + t0;
+                let isEnd = maxTime <= next;
+                next = isEnd ? maxTime : next;
+                let pitch = param; // x/127 20で半音変化 -が高く +が低い
+                let shift = -pitch / 20;
                 _this.freqTimeline.push({
                     type:"liner",
                     value:_this.calcFreq(e.noteNumber + e.key + shift),
-                    time:maxTime
+                    time:next
                 });
+                if(isEnd) break;
+                n++;
+                if(i == len - 1){
+                    if(loopPoint >= 0){
+                        i = loopPoint;
+                    }
+                    else{
+                        _this.freqTimeline.push({
+                            type:"liner",
+                            value:_this.calcFreq(e.noteNumber + e.key + shift),
+                            time:maxTime
+                        });
+                    }
+                }
             }
         }
     }
@@ -219,24 +233,39 @@ class TrackSoundData
         let maxTime = t1;
         let next = t0;
         let _this = this;
+        let n = 0;
+        let loopPoint = -1;
         for(let i = 0; i < len; ++i){
-            next = (i+1)/60 + t0;
-            let isEnd = maxTime <= next;
-            next = isEnd ? maxTime : next;
-            let rate = this.getParam(params, i, 0, 0) / 15; // x/15
-            rate = Math.min(rate,15*4);
-            _this.volumeTimeline.push({
-                type:"liner",
-                value:rate,
-                time:next
-            });
-            if(isEnd) break;
-            if(i == len - 1){
+            let param = this.getParam(params, i, 0, 0);
+            if(param == "L"){
+                loopPoint = i;
+            }
+            else{
+                let rate = param / 15; // x/15
+                next = (n+1)/60 + t0;
+                let isEnd = maxTime <= next;
+                next = isEnd ? maxTime : next;
+                rate = Math.min(rate,15*4);
                 _this.volumeTimeline.push({
                     type:"liner",
                     value:rate,
-                    time:maxTime
+                    time:next
                 });
+                console.log("rate:" + n + " :" + rate);
+                if(isEnd) break;
+                n++;
+                if(i == len - 1){
+                    if(loopPoint >= 0){
+                        i = loopPoint;
+                    }
+                    else{
+                        _this.volumeTimeline.push({
+                            type:"liner",
+                            value:rate,
+                            time:maxTime
+                        });
+                    }
+                }
             }
         }
     }
@@ -258,14 +287,14 @@ class TrackSoundData
                     let freq = frequency.getValueAtTime(freqInfo.start);
                     let next = freq * freqInfo.value;
                     frequency.linearRampToValueAtTime(next, freqInfo.time);
-                    console.log(freqInfo);
+                    //console.log(freqInfo);
                 }
                 break;
                 case "multipleSet":{
                     let freq = frequency.getValueAtTime(freqInfo.time);
                     let next = freq * freqInfo.value;
                     frequency.setValueAtTime(next, freqInfo.time);
-                    console.log(freqInfo);
+                    //console.log(freqInfo);
                 }
                 break;
             }
@@ -292,7 +321,7 @@ class TrackSoundData
         this.volumeTimeline.splice(0);
     }
 
-    setArpeggio(e){
+    setArpeggio_bk(e){
         if(!this.arpeggio || !this.arpeggio.values || this.arpeggio.values.length < 1) return false;
         
         let result = false;
@@ -313,6 +342,45 @@ class TrackSoundData
                 next.noteNumber = e.noteNumber + v;
                 t = t + time;
                 this.playNote(next);
+            });
+        }
+
+        return result;
+    }
+
+    setArpeggio(e){
+        if(!this.arpeggio || !this.arpeggio.values || this.arpeggio.values.length < 1) return false;
+        
+        let result = false;
+        let length = this.arpeggio.length <= 0 ? 64 : this.arpeggio.length;
+        let time = 60 /  e.tempo * (4 / length);
+        let t = e.playbackTime;
+        let maxTime = e.playbackTime + e.duration * e.quantize / 100;
+        let _this = this;
+        
+        let bkShift = 0;
+        while(t < maxTime){
+            this.arpeggio.values.forEach((v) => {
+                if(t >= maxTime) return;
+
+                result = true;
+                let shift = v;
+                // console.log("arpeggio:" + e.noteNumber + " add:" + shift)
+                /*
+                _this.freqTimeline.push({
+                    type:"set",
+                    value:_this.calcFreq(e.noteNumber + e.key + shift),
+                    time:t
+                });
+                */
+                _this.freqTimeline.push({
+                    type:"multipleSet",
+                    value:this.calcTransFreqRate(shift - bkShift),
+                    time:t
+                });
+                bkShift = shift;
+
+                t = t + time;
             });
         }
 
@@ -352,7 +420,13 @@ class TrackSoundData
         filter.setQ(this.filter.low.q, this.filter.high.q);
         // console.log(this.filter);
     }
+    setPan(panner, t0, pan){
+        if(!panner) return;
+        panner.pan.setValueAtTime(pan, t0);
+    }
     setEffects(info, t0, e){
+        this.setArpeggio(e);
+        this.setPan(info.panner, t0, e.pan);
         this.setEnvelope(info.env, e.envelope);
         this.setPitch(t0, this.pitch);
         this.setVibrato(info.vib, t0, this.vibrato);
@@ -369,6 +443,9 @@ class TrackSoundData
         if(!command) return;
         //console.log(command)
         switch(command.command){
+            case "reset":{
+                this.reset();
+            }break;
             // 高速アルペジオ
             case "c":{
                 this.arpeggio.length = this.getParam(command.value, 0, 8);
@@ -437,6 +514,8 @@ class TrackSoundData
         if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
         node = this.connect(node, info.gain);
         if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
+        node = this.connect(node, info.panner);
+        if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
         node = this.connect(node, info.waveform);
         if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
         if(node) node.toDestination();
@@ -451,6 +530,7 @@ class TrackSoundData
         info.rev = new Tone.Reverb();
         info.filter = new SoundFilter();
         info.gain = new Tone.Gain(1);
+        info.panner = new Tone.Panner(0);
     }
 
     calcPlayNoteRate(noteNumber){
@@ -668,7 +748,7 @@ class TrackSoundPulse extends TrackSoundData
     }
 
     calcFreq(noteNumber){
-        return noteNumber;
+        return mtof(noteNumber);
     }
 
     playNote(e){
@@ -683,10 +763,6 @@ class TrackSoundPulse extends TrackSoundData
         this.setCommands(info, t0, e.commands);
         if(e.mute){
             info.isActive = false;
-            return;
-        }
-
-        if(!e.isArpeggio && this.setArpeggio(e)){
             return;
         }
 
@@ -819,10 +895,6 @@ class TrackSoundWave extends TrackSoundData
         }
         if(e.mute){
             info.isActive = false;
-            return;
-        }
-
-        if(!e.isArpeggio && this.setArpeggio(e)){
             return;
         }
 
@@ -1024,10 +1096,6 @@ class TrackSoundNoise extends TrackSoundData
             return;
         }
 
-        if(!e.isArpeggio && this.setArpeggio(e)){
-            return;
-        }
-
         // 毎回作る必要があるらしい
         this.setPrevBufferInfo(info);
         if(e.tone == 0){
@@ -1116,9 +1184,6 @@ class TrackSoundSource extends TrackSoundData
         this.setCommands(info, t0, e.commands);
         if(e.mute){
             info.isActive = false;
-            return;
-        }
-        if(!e.isArpeggio && this.setArpeggio(e)){
             return;
         }
 

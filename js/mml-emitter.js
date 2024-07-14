@@ -1009,10 +1009,11 @@ exports["default"] = {
   command: [[{command:"v",value:[0,0]}]],
   wave: null,
   pitch: null,
-  volume: null,
+  volume: [15],
+  detune: 0,
+  pan: 0,
   slur: null,
   mute: false,
-  detune: 0,
 };
 module.exports = exports["default"];
 },{}],19:[function(require,module,exports){
@@ -1064,12 +1065,13 @@ var MMLIterator = (function () {
     this._key = _DefaultParams2["default"].key;
     this._envelope = _DefaultParams2["default"].envelope;
     this._baseTone = _DefaultParams2["default"].baseTone;
-    this._detune = _DefaultParams2["default"].detune;
     this._command = JSON.parse(JSON.stringify(_DefaultParams2["default"].command));
     this._mute = _DefaultParams2["default"].mute;
     this._wave = _DefaultParams2["default"].wave;
     this._pitch = _DefaultParams2["default"].pitch;
     this._volume = _DefaultParams2["default"].volume;
+    this._detune = _DefaultParams2["default"].detune;
+    this._pan = _DefaultParams2["default"].pan;
     this._slur = _DefaultParams2["default"].slur;
     this._infiniteLoopIndex = -1;
     this._loopStack = [];
@@ -1318,31 +1320,32 @@ var MMLIterator = (function () {
    {
     key: _Syntax2["default"].Note,
     value: function value(command) {
-      var _this2 = this;
+      let _this2 = this;
 
-      var type = "note";
-      var time = this._processedTime;
-      var textIndex = command.textIndex;
-      var duration = this._calcDuration(command.noteLength);
-      var noteNumbers = command.noteNumbers.map(function (noteNumber) {
+      let type = "note";
+      let time = this._processedTime;
+      let textIndex = command.textIndex;
+      let duration = this._calcDuration(command.noteLength);
+      let noteNumbers = command.noteNumbers.map(function (noteNumber) {
         return _this2._calcNoteNumber(noteNumber);
       });
-      var quantize = this._quantize;
-      var velocity = this._velocity;
-      var tone = this._tone;
-      var key = this._key;
-      var tempo = this._tempo;
-      var length128 = this._lastNoteLength; // 追加
-      var length = this._lastNoteLength / 128 * 4; // 4/4のときの長さ
-      var envelope = this._envelope;
-      var baseTone = this._baseTone;
-      var detune = this._detune;
-      var cmd = this._command;
-      var mute = this._mute;
-      var wave = this._wave;
-      var pitch = this._pitch;
-      var volume = this._volume;
-      var currentLength = this._currentLength;
+      let quantize = this._quantize;
+      let velocity = this._velocity;
+      let tone = this._tone;
+      let key = this._key;
+      let tempo = this._tempo;
+      let length128 = this._lastNoteLength; // 追加
+      let length = this._lastNoteLength / 128 * 4; // 4/4のときの長さ
+      let envelope = this._envelope;
+      let baseTone = this._baseTone;
+      let cmd = this._command;
+      let mute = this._mute;
+      let wave = this._wave;
+      let pitch = this._pitch;
+      let volume = this._volume;
+      let detune = this._detune;
+      let pan = this._pan;
+      let currentLength = this._currentLength;
       this._wave = null;
       this._command = null;
 
@@ -1393,6 +1396,7 @@ var MMLIterator = (function () {
           mute:mute,
           pitch:pitch,
           volume:volume,
+          pan:pan,
           wave:wave,
           slur:slur,
           slurDuration:slurDuration,
@@ -1404,7 +1408,7 @@ var MMLIterator = (function () {
   }, {
     key: _Syntax2["default"].Rest,
     value: function value(command) {
-      var duration = this._calcDuration(command.noteLength);
+      let duration = this._calcDuration(command.noteLength);
 
       this._processedTime = this._processedTime + duration;
       this._currentLength = this._currentLength + this._lastNoteLength; // 少数を使わないように128分音符を基準の長さにする
@@ -1417,14 +1421,14 @@ var MMLIterator = (function () {
   }, {
     key: _Syntax2["default"].OctaveShift,
     value: function value(command) {
-      var value = command.value !== null ? command.value : 1;
+      let value = command.value !== null ? command.value : 1;
 
       this._octave += value * command.direction;
     }
   }, {
     key: _Syntax2["default"].NoteLength,
     value: function value(command) {
-      var noteLength = command.noteLength.map(function (value) {
+      let noteLength = command.noteLength.map(function (value) {
         return value !== null ? value : _DefaultParams2["default"].length;
       });
 
@@ -1469,6 +1473,12 @@ var MMLIterator = (function () {
     key: _Syntax2["default"].Detune,
     value: function value(command) {
       this._detune = command.value !== null ? command.value : _DefaultParams2["default"].detune;
+    }
+  },
+  {
+    key: _Syntax2["default"].Pan,
+    value: function value(command) {
+      this._pan = command.value !== null ? command.value : _DefaultParams2["default"].pan;
     }
   },
   {
@@ -1529,17 +1539,17 @@ var MMLIterator = (function () {
   }, {
     key: _Syntax2["default"].LoopBegin,
     value: function value(command) {
-      var loopCount = command.value !== null ? command.value : _DefaultParams2["default"].loopCount;
-      var loopTopIndex = this._commandIndex;
-      var loopOutIndex = -1;
+      let loopCount = command.value !== null ? command.value : _DefaultParams2["default"].loopCount;
+      let loopTopIndex = this._commandIndex;
+      let loopOutIndex = -1;
 
       this._loopStack.push({ loopCount: loopCount, loopTopIndex: loopTopIndex, loopOutIndex: loopOutIndex });
     }
   }, {
     key: _Syntax2["default"].LoopExit,
     value: function value() {
-      var looper = this._loopStack[this._loopStack.length - 1];
-      var index = this._commandIndex;
+      let looper = this._loopStack[this._loopStack.length - 1];
+      let index = this._commandIndex;
 
       if (looper.loopCount <= 1 && looper.loopOutIndex !== -1) {
         index = looper.loopOutIndex;
@@ -1550,8 +1560,8 @@ var MMLIterator = (function () {
   }, {
     key: _Syntax2["default"].LoopEnd,
     value: function value() {
-      var looper = this._loopStack[this._loopStack.length - 1];
-      var index = this._commandIndex;
+      let looper = this._loopStack[this._loopStack.length - 1];
+      let index = this._commandIndex;
 
       if (looper.loopOutIndex === -1) {
         looper.loopOutIndex = this._commandIndex;
@@ -1574,7 +1584,7 @@ var MMLIterator = (function () {
 exports["default"] = MMLIterator;
 
 function arrayToIterator(array) {
-  var index = 0;
+  let index = 0;
 
   return {
     next: function next() {
@@ -1663,6 +1673,8 @@ var MMLParser = (function () {
           return this.readNoteVelocity();
         case "D":
           return this.readDetune();
+        case "P":
+          return this.readPan();
         case "t":
           return this.readTempo();
         case "k":
@@ -1859,6 +1871,17 @@ var MMLParser = (function () {
     }
   },
   {
+    key: "readPan",
+    value: function readPan() {
+      this.scanner.expect("P");
+
+      return {
+        type: _Syntax2["default"].Pan,
+        value: this._readArgument(/(\+|\-)?\d+(\.\d+)?/)
+      };
+    }
+  },
+  {
   key: "readTone",
     value: function readTone() {
       let nextStr = this.scanner.getNext()
@@ -1929,12 +1952,39 @@ var MMLParser = (function () {
         let _this4 = this;
         this._readUntil("]", function () {
           let val = _this4._readArgument(/(\+|\-)?\d+(\.\d+)?/);
-          if(val == null) _this4.scanner.next();
+          if(val == null) {
+            val = _this4._readStr("L");
+            if(val == null){
+              _this4.scanner.next();
+            }else valueList.push(val);
+          }
           else valueList.push(val);
         });
         this.scanner.expect("]");
         return {
           type: _Syntax2["default"].Pitch,
+          value: valueList
+        };
+      }
+      // pan
+      else if(nextStr == "P"){
+        this.scanner.expect("P");
+        this.scanner.expect("[");
+        let valueList = []
+        let _this4 = this;
+        this._readUntil("]", function () {
+          let val = _this4._readArgument(/(\+|\-)?\d+(\.\d+)?/);
+          if(val == null) {
+            val = _this4._readStr("L");
+            if(val == null){
+              _this4.scanner.next();
+            }else valueList.push(val);
+          }
+          else valueList.push(val);
+        });
+        this.scanner.expect("]");
+        return {
+          type: _Syntax2["default"].InstPan,
           value: valueList
         };
       }
@@ -1946,7 +1996,12 @@ var MMLParser = (function () {
         let _this4 = this;
         this._readUntil("]", function () {
           let val = _this4._readArgument(/(\+|\-)?\d+(\.\d+)?/);
-          if(val == null) _this4.scanner.next();
+          if(val == null) {
+            val = _this4._readStr("L");
+            if(val == null){
+              _this4.scanner.next();
+            }else valueList.push(val);
+          }
           else valueList.push(val);
         });
         this.scanner.expect("]");
@@ -2321,6 +2376,8 @@ exports["default"] = {
   Wave: "Wave",
   Pitch: "Pitch",
   Volume: "Volume",
+  Detune: "Detune",
+  Pan: "Pan",
   InfiniteLoop: "InfiniteLoop",
   LoopBegin: "LoopBegin",
   LoopExit: "LoopExit",

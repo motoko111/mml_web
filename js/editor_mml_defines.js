@@ -30,7 +30,7 @@
                     },
                     {
                         token : "command",
-                        regex : /@[a-z]\[(\s*([a-z]+|(\+|\-)?\d+\.?\d*)\s*,?)*\]/,
+                        regex : /@[a-z]\[(\s*([a-zA-Z]+|(\+|\-)?\d+\.?\d*)\s*,?)*\]/,
                     },
                     {
                         token : "command",
