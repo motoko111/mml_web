@@ -175,6 +175,13 @@ class MMLEditor{
             }
         })
         this.editor.commands.addCommand({
+            name: 'bpm analyser',
+            bindKey: {win: "Ctrl-B", "mac": "Cmd-B"},
+            exec: function(editor) {
+                new BPMAnalyser().run();
+            }
+        })
+        this.editor.commands.addCommand({
             name: 'check line length',
             bindKey: {win: "Alt-I", "mac": "Option-I"},
             exec: function(editor) {
@@ -241,6 +248,7 @@ class MMLEditor{
         logEditor.setOptions({
             fontSize: "8pt"
         });
+        //logEditor.setTheme("ace/theme/ace-mml");
         this.logEditors[track] = logEditor
     }
 

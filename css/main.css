@@ -205,10 +205,6 @@ input[type="checkbox"]:checked:before {
     background-color: rgba(143, 23, 23, 0.8);
 }
 
-.hidden {
-    display: none;
-}
-
 .fukidashi {
     display: none;
     width: 200px;
@@ -238,3 +234,38 @@ input[type="checkbox"]:checked:before {
   .button:hover + .fukidashi {
     display: block;
   }
+
+ .dialog-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    opacity: 1;
+}
+.dialog-overlay .show {
+    opacity: 1;
+    transition: all 0.2s;
+}
+.dialog-overlay .hide {
+    opacity: 0;
+    transition: all 0.01s;
+}
+
+.dialog-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    z-index: 1020;
+}
+
+.hidden {
+    display: none;
+}

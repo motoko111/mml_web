@@ -1008,6 +1008,8 @@ exports["default"] = {
   baseTone: null,
   command: [[{command:"v",value:[0,0]}]],
   wave: null,
+  pitch: null,
+  volume: null,
   slur: null,
   mute: false,
   detune: 0,
@@ -1066,6 +1068,8 @@ var MMLIterator = (function () {
     this._command = JSON.parse(JSON.stringify(_DefaultParams2["default"].command));
     this._mute = _DefaultParams2["default"].mute;
     this._wave = _DefaultParams2["default"].wave;
+    this._pitch = _DefaultParams2["default"].pitch;
+    this._volume = _DefaultParams2["default"].volume;
     this._slur = _DefaultParams2["default"].slur;
     this._infiniteLoopIndex = -1;
     this._loopStack = [];
@@ -1336,6 +1340,8 @@ var MMLIterator = (function () {
       var cmd = this._command;
       var mute = this._mute;
       var wave = this._wave;
+      var pitch = this._pitch;
+      var volume = this._volume;
       var currentLength = this._currentLength;
       this._wave = null;
       this._command = null;
@@ -1385,6 +1391,8 @@ var MMLIterator = (function () {
           chord:noteNumbers.length > 1,
           commands:cmd,
           mute:mute,
+          pitch:pitch,
+          volume:volume,
           wave:wave,
           slur:slur,
           slurDuration:slurDuration,
@@ -1486,6 +1494,18 @@ var MMLIterator = (function () {
     key: _Syntax2["default"].Wave,
     value: function value(command) {
       this._wave = command.value !== null ? command.value : _DefaultParams2["default"].wave;
+    }
+  },
+  {
+    key: _Syntax2["default"].Pitch,
+    value: function value(command) {
+      this._pitch = command.value !== null ? command.value : _DefaultParams2["default"].pitch;
+    }
+  },
+  {
+    key: _Syntax2["default"].Volume,
+    value: function value(command) {
+      this._volume = command.value !== null ? command.value : _DefaultParams2["default"].volume;
     }
   },
   {
@@ -1876,9 +1896,6 @@ var MMLParser = (function () {
           value: valueList
         };
       }
-      // value
-      else if(nextStr == "v"){
-      }
       // mute
       else if(nextStr == "m"){
         this.scanner.expect("m");
@@ -1901,6 +1918,40 @@ var MMLParser = (function () {
         this.scanner.expect("]");
         return {
           type: _Syntax2["default"].Wave,
+          value: valueList
+        };
+      }
+      // pitch
+      else if(nextStr == "p"){
+        this.scanner.expect("p");
+        this.scanner.expect("[");
+        let valueList = []
+        let _this4 = this;
+        this._readUntil("]", function () {
+          let val = _this4._readArgument(/(\+|\-)?\d+(\.\d+)?/);
+          if(val == null) _this4.scanner.next();
+          else valueList.push(val);
+        });
+        this.scanner.expect("]");
+        return {
+          type: _Syntax2["default"].Pitch,
+          value: valueList
+        };
+      }
+      // volume
+      else if(nextStr == "v"){
+        this.scanner.expect("v");
+        this.scanner.expect("[");
+        let valueList = []
+        let _this4 = this;
+        this._readUntil("]", function () {
+          let val = _this4._readArgument(/(\+|\-)?\d+(\.\d+)?/);
+          if(val == null) _this4.scanner.next();
+          else valueList.push(val);
+        });
+        this.scanner.expect("]");
+        return {
+          type: _Syntax2["default"].Volume,
           value: valueList
         };
       }
@@ -2268,6 +2319,8 @@ exports["default"] = {
   Command: "Command",
   Mute: "Mute",
   Wave: "Wave",
+  Pitch: "Pitch",
+  Volume: "Volume",
   InfiniteLoop: "InfiniteLoop",
   LoopBegin: "LoopBegin",
   LoopExit: "LoopExit",

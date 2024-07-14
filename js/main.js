@@ -148,6 +148,8 @@ const exportFileAsync = async () => {
   // FileSystemWritableFileStream オブジェクトを取得
   const stream = await fh.createWritable();
   
+  saveLocalStorage();
+  
   // テキストデータの Blob オブジェクトを生成
   const content = mmlEditor.editor.getValue();
   const blob = new Blob([content], { type: 'text/plain' });
@@ -648,11 +650,11 @@ var setupAudioAsync = async (callback) => {
   tracks = createTrackSounds();
   editTracks = createTrackSounds();
 
+  waveDrawers = createWaveDrawers();
+
   while(!isLoadedTracks(tracks) || !isLoadedTracks(editTracks)){
     await new Promise(resolve => setTimeout(resolve, 100))
   }
-
-  waveDrawers = createWaveDrawers();
 
   finishedInitAudio = true;
 
@@ -713,6 +715,5 @@ var initPage = async () => {
 
   mmlEditor.setEnableEditPlay(true);
 
-  // start();
 };
 initPage();

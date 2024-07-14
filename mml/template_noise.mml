@@ -1,0 +1,26 @@
+// Noise
+// @0 短周期ノイズ
+// @1 長周期ノイズ
+@[noise]
+t158 l8 o4 q90 v50 @1 @e[0,0.1,1.0,0.01] @m0
+h=@1 v30 o6 q90 @e[0.01,0.1,0.01,0] a  /* hihat close */
+n=@1 v30 o6 q90 @e[0.01,0.1,0.6,0.4] a /* hihat open */
+c=@1 v30 o6 q90 @e[0.01,0.1,1.0,1.0] a /* crash (cymbal) */
+s=@1 v30 o4 q90 @e[0.01,0.3,0.1,0.1] a /* snare */
+k=@1 v60 o2 q90 @e[0.01,0.3,0.1,0] a   /* kick */
+l16 
+krhh srhh krhh srnh
+krhh srhh krhh srnh
+krhh srhh krhh srnh
+krhh srhh krhh srnh
+;
+
+// Triangle(Wave)
+@[tri]
+t158 l8 o4 q90 v70 @m0
+k = v70 @e[0,0.2,0,1,0.01] o5 @p[1200,800,1700] a32r32 @p[0] /* kick */
+l16
+/:r:/64
+krkr krkr krkk krkr
+krkr krkr krkk krkr
+;

@@ -30,15 +30,19 @@
                     },
                     {
                         token : "command",
-                        regex : /([o|k|v|t|@|l|q]\d+)/,
+                        regex : /@[a-z]\[(\s*([a-z]+|(\+|\-)?\d+\.?\d*)\s*,?)*\]/,
                     },
                     {
                         token : "command",
-                        regex : /@[a-z]\d+/,
+                        regex : /([o|k|v|t|@|l|q]\d+(\.\d)?)/,
                     },
                     {
                         token : "command",
-                        regex : /@[a-z]\[(\s*\d+\.?\d*\s*,?)*\]/,
+                        regex : /@[a-z]\d*/,
+                    },
+                    {
+                        token : "command",
+                        regex : /(@)/,
                     },
                     {
                         token : "note",

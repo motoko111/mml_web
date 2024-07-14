@@ -112,6 +112,8 @@ class TrackSoundData
         this.pitch = {pitch:0,delay:0,delayDuration:0};
         this.reverb = {decay:0.001,preDelay:0};
         this.filter = {low:{freq:0,gain:1,q:1},mid:{gain:1},high:{freq:440*Math.pow(2,20),gain:1,q:1}};
+        this.freqTimeline = [];
+        this.volumeTimeline = [];
     }
 
     checkParam(params, index){
@@ -136,20 +138,158 @@ class TrackSoundData
         env.release = this.getParam(envParams, 3, 0.5, 0.0001);
     }
 
-    setSlur(frequency, slur, t0, time, key, calcFreq){
+    setSlur(frequency, slur, t0, time, key){
         if(slur == null || slur.length < 1) return 0;
         if(key === undefined) key = 0;
-        if(!calcFreq) calcFreq = mtoco;
         
         let t = t0 + time;
         let addTime = 0;
+        let _this = this;
         slur.forEach(s => {
             t += s.duration;
             addTime += s.duration;
-            //console.log("slur:" + s.duration + "," + (s.noteNumber + key));
-            frequency.linearRampToValueAtTime(calcFreq((s.noteNumber + key)), t);
+            _this.freqTimeline.push({
+                type:"liner",
+                value:_this.calcFreq(s.noteNumber + key),
+                time:t
+            });
         });
         return addTime;
+    }
+    
+    setInstPitch(e, t0, t1, params)
+    {
+        if(!params) {
+            return;
+        }
+        let len = params.length;
+        let maxTime = t1;
+        let next = t0;
+        let _this = this;
+        for(let i = 0; i < len; ++i){
+            next = (i+1)/60 + t0;
+            let isEnd = maxTime <= next;
+            next = isEnd ? maxTime : next;
+            let pitch = this.getParam(params, i, 0, 0); // x/127 20で半音変化 -が高く +が低い
+            let shift = -pitch / 20;
+            _this.freqTimeline.push({
+                type:"liner",
+                value:_this.calcFreq(e.noteNumber + e.key + shift),
+                time:next
+            });
+            if(isEnd) break;
+            if(i == len - 1){
+                _this.freqTimeline.push({
+                    type:"liner",
+                    value:_this.calcFreq(e.noteNumber + e.key + shift),
+                    time:maxTime
+                });
+            }
+        }
+    }
+
+    setPitch(t0, params)
+    {
+        if(!params) return;
+        let pitch = params.pitch; // x/127 20で半音変化 -が高く +が低い
+        let start = t0 + params.delay;
+        let next = start + params.delayDuration;
+        let shift = -pitch / 20;
+        if(pitch !== 0){
+            this.freqTimeline.push({
+                type:"multipleSet",
+                value:this.calcTransFreqRate(0),
+                time:start
+            });
+            this.freqTimeline.push({
+                type:"multipleLiner",
+                value:this.calcTransFreqRate(shift),
+                start:start,
+                time:next
+            });
+        }
+    }
+
+    setInstVolume(e, t0, t1, params)
+    {
+        if(!params) {
+            return;
+        }
+        let len = params.length;
+        let maxTime = t1;
+        let next = t0;
+        let _this = this;
+        for(let i = 0; i < len; ++i){
+            next = (i+1)/60 + t0;
+            let isEnd = maxTime <= next;
+            next = isEnd ? maxTime : next;
+            let rate = this.getParam(params, i, 0, 0) / 15; // x/15
+            rate = Math.min(rate,15*4);
+            _this.volumeTimeline.push({
+                type:"liner",
+                value:rate,
+                time:next
+            });
+            if(isEnd) break;
+            if(i == len - 1){
+                _this.volumeTimeline.push({
+                    type:"liner",
+                    value:rate,
+                    time:maxTime
+                });
+            }
+        }
+    }
+
+    applyFreqTimeLine(frequency){
+        if(!this.freqTimeline || this.freqTimeline.length < 1) return;
+        for(let i = 0; i < this.freqTimeline.length; ++i){
+            let freqInfo = this.freqTimeline[i];
+            switch(freqInfo.type){
+                case "liner":{
+                    frequency.linearRampToValueAtTime(freqInfo.value, freqInfo.time);
+                }
+                break;
+                case "set":{
+                    frequency.setValueAtTime(freqInfo.value, freqInfo.time);
+                }
+                break;
+                case "multipleLiner":{
+                    let freq = frequency.getValueAtTime(freqInfo.start);
+                    let next = freq * freqInfo.value;
+                    frequency.linearRampToValueAtTime(next, freqInfo.time);
+                    console.log(freqInfo);
+                }
+                break;
+                case "multipleSet":{
+                    let freq = frequency.getValueAtTime(freqInfo.time);
+                    let next = freq * freqInfo.value;
+                    frequency.setValueAtTime(next, freqInfo.time);
+                    console.log(freqInfo);
+                }
+                break;
+            }
+            
+        }
+        this.freqTimeline.splice(0);
+    }
+
+    applyVolumeTimeLine(gain){
+        if(!this.volumeTimeline || this.volumeTimeline.length < 1) return;
+        for(let i = 0; i < this.volumeTimeline.length; ++i){
+            let volumeInfo = this.volumeTimeline[i];
+            switch(volumeInfo.type){
+                case "liner":{
+                    gain.linearRampToValueAtTime(volumeInfo.value, volumeInfo.time);
+                }
+                break;
+                case "set":{
+                    gain.setValueAtTime(volumeInfo.value, volumeInfo.time);
+                }
+                break;
+            }
+        }
+        this.volumeTimeline.splice(0);
     }
 
     setArpeggio(e){
@@ -198,26 +338,7 @@ class TrackSoundData
             vib.wet.setValueAtTime(0.0, t0);
         }
     }
-    setPitch(pitch, t0, params)
-    {
-        if(!pitch) return;
-        if(!params) return;
-        pitch.pitch = params.pitch * 0.1; // セント単位からセミトーン単位に変更
-        if(params.pitch !== 0){
-            if(params.delay > 0 && params.delayDuration > 0){
-                pitch.wet.setValueAtTime(0.0, t0);
-                pitch.wet.setTargetAtTime(1.0, t0 + params.delay, params.delayDuration);
-            }
-            else{
-                pitch.wet.setValueAtTime(0.0, t0);
-                pitch.wet.setValueAtTime(1.0, t0 + params.delay);
-            }
-        }
-        else{
-            pitch.wet.setValueAtTime(0.0, t0);
-        }
-        
-    }
+
     setReverb(rev, params){
         if(!rev) return;
         if(!params) return;
@@ -233,7 +354,7 @@ class TrackSoundData
     }
     setEffects(info, t0, e){
         this.setEnvelope(info.env, e.envelope);
-        this.setPitch(info.pitch, t0, this.pitch);
+        this.setPitch(t0, this.pitch);
         this.setVibrato(info.vib, t0, this.vibrato);
         this.setReverb(info.rev, this.reverb);
         this.setFilter(info.filter, this.filter);
@@ -270,8 +391,8 @@ class TrackSoundData
             // ピッチ
             case "p":{
                 this.pitch.pitch = this.getParam(command.value, 0, 0);
-                this.pitch.delay = this.getParam(command.value, 1, 0);
-                this.pitch.delayDuration = this.getParam(command.value, 2, 0);
+                this.pitch.delay = this.getParam(command.value, 1, 0, 0);
+                this.pitch.delayDuration = this.getParam(command.value, 2, 0, 0);
             }break;
             // リバーブ
             case "r":{
@@ -314,6 +435,8 @@ class TrackSoundData
         if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
         node = this.connect(node, info.env);
         if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
+        node = this.connect(node, info.gain);
+        if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
         node = this.connect(node, info.waveform);
         if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
         if(node) node.toDestination();
@@ -327,7 +450,7 @@ class TrackSoundData
         info.vib = new Tone.Vibrato();
         info.rev = new Tone.Reverb();
         info.filter = new SoundFilter();
-        info.pitch = new Tone.PitchShift();
+        info.gain = new Tone.Gain(1);
     }
 
     calcPlayNoteRate(noteNumber){
@@ -497,6 +620,15 @@ class TrackSoundData
         return targetInfo.waveform.getValue(); // 最後に再生したデータの波形データを返す
     }
 
+    calcFreq(noteNumber){
+        return noteNumber;
+    }
+
+    // 周波数を半音上げる/下げるための倍率
+    calcTransFreqRate(trans){
+        return Math.pow(2, trans/12);
+    }
+
     dispose(){
         this.stopPlayInfoAll();
         this.playInfos = [];
@@ -535,6 +667,10 @@ class TrackSoundPulse extends TrackSoundData
         //if(info.lastNode) info.lastNode.disconnect();
     }
 
+    calcFreq(noteNumber){
+        return noteNumber;
+    }
+
     playNote(e){
         var time = e.duration /* 音符の長さ */ * (e.quantize /* 音の長さ倍率 */ / 100);
         var t0 = e.playbackTime;// 再生開始時間
@@ -561,6 +697,14 @@ class TrackSoundPulse extends TrackSoundData
         let addTime = this.setSlur(info.osc.frequency, e.slur, t0 + WAIT_SEC, time, e.key);
         time += addTime;
         t1 = t0 + time + info.env.release;
+        if(e.pitch){
+            this.setInstPitch(e, t0 + WAIT_SEC,  t1 + WAIT_SEC, e.pitch);
+        }
+        if(e.volume){
+            this.setInstVolume(e, t0 + WAIT_SEC,  t1 + WAIT_SEC, e.volume);
+        }
+        this.applyFreqTimeLine(info.osc.frequency);
+        this.applyVolumeTimeLine(info.gain.gain);
         info.osc.start(t0 + WAIT_SEC);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.osc.stop(t1 + WAIT_SEC);
@@ -577,6 +721,7 @@ class TrackSoundWave extends TrackSoundData
         this.waveUpdateTime = 0;
         this.oscWaves = this.createWave();
         this.type = "wave";
+        this.defaultHzPlayRate = 0;
     }
 
     reset(){
@@ -655,6 +800,10 @@ class TrackSoundWave extends TrackSoundData
         return true
     }
 
+    calcFreq(noteNumber){
+        return this.calcPlayNoteRate(noteNumber) * this.defaultHzPlayRate;
+    }
+
     playNote(e){
         var time = e.duration * (e.quantize / 100);
         var t0 = e.playbackTime;// 再生開始時間
@@ -709,15 +858,22 @@ class TrackSoundWave extends TrackSoundData
         let defaultHz = Tone.context.sampleRate / info.countPerHz;
         let defaultHzPlayRate = 440.0 / defaultHz;
         let playbackRate = 1.0 * notePlayRate * defaultHzPlayRate;
+        this.defaultHzPlayRate = defaultHzPlayRate;
         // console.log(' defaultHz:' + defaultHz + " defaultHzPlayRate:" + defaultHzPlayRate + " playbackRate:" + playbackRate + " notePlayRate:" + notePlayRate)
         info.bufferSorce.playbackRate.setValueAtTime(playbackRate, t0 + WAIT_SEC);
         if(e.slur){
-            let addTime = this.setSlur(info.bufferSorce.playbackRate, e.slur, t0 + WAIT_SEC, time, e.key, (noteNumber) => {
-                return this.calcPlayNoteRate(noteNumber) * defaultHzPlayRate;
-            });
+            let addTime = this.setSlur(info.bufferSorce.playbackRate, e.slur, t0 + WAIT_SEC, time, e.key);
             time += addTime;
         }
         t1 = t0 + time + info.env.release;
+        if(e.pitch){
+            this.setInstPitch(e, t0 + WAIT_SEC,  t1 + WAIT_SEC, e.pitch);
+        }
+        if(e.volume){
+            this.setInstVolume(e, t0 + WAIT_SEC,  t1 + WAIT_SEC, e.volume);
+        }
+        this.applyFreqTimeLine(info.bufferSorce.playbackRate);
+        this.applyVolumeTimeLine(info.gain.gain);
         info.bufferSorce.start(t0 + WAIT_SEC);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.bufferSorce.stop(t1 + WAIT_SEC);
@@ -744,7 +900,7 @@ class TrackSoundTriangle extends TrackSoundWave
         this.type = "tri";
     }
     createWave(){
-        return this.getWaveValues([8,8,7,6,5,4,3,2,1,1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,15,14,13,12,11,10,9,8,8]);
+        return this.getWaveValues([8,8,7,6,5,4,3,2,1,1,1,2,3,4,5,6, 7,8,9,10,11,12,13,14,15,15,14,13,12,11,10,9]);
     }
 }
 
@@ -850,6 +1006,10 @@ class TrackSoundNoise extends TrackSoundData
         //if(info.lastNode) info.lastNode.disconnect();
     }
 
+    calcFreq(noteNumber){
+        return this.calcPlayNoteRate(noteNumber) * ((NES_CLOCK_COUNT / 202) / sampleRate);
+    }
+
     playNote(e){
         var time = e.duration /* 音符の長さ */ * (e.quantize /* 音の長さ倍率 */ / 100);
         var t0 = e.playbackTime;// 再生開始時間
@@ -890,12 +1050,18 @@ class TrackSoundNoise extends TrackSoundData
         //console.log("noise: playbackRate = " + playbackRate + " ,notePlayRate=" + notePlayRate + " ,min=" + min + " ,max=" + max);
         info.bufferSorce.playbackRate.setValueAtTime(playbackRate, t0 + WAIT_SEC);
         if(e.slur){
-            let addTime = this.setSlur(info.bufferSorce.playbackRate, e.slur, t0 + WAIT_SEC, time, e.key, (noteNumber) => {
-                return this.calcPlayNoteRate(noteNumber) * ((NES_CLOCK_COUNT / 202) / sampleRate);
-            });
+            let addTime = this.setSlur(info.bufferSorce.playbackRate, e.slur, t0 + WAIT_SEC, time, e.key);
             time += addTime;
         }
         t1 = t0 + time + info.env.release;
+        if(e.pitch){
+            this.setInstPitch(e, t0 + WAIT_SEC,  t1 + WAIT_SEC, e.pitch);
+        }
+        if(e.volume){
+            this.setInstVolume(e, t0 + WAIT_SEC,  t1 + WAIT_SEC, e.volume);
+        }
+        this.applyFreqTimeLine(info.bufferSorce.playbackRate);
+        this.applyVolumeTimeLine(info.gain.gain);
         info.bufferSorce.start(t0 + WAIT_SEC);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.bufferSorce.stop(t1 + WAIT_SEC);
@@ -934,6 +1100,10 @@ class TrackSoundSource extends TrackSoundData
         info.bufferSorce = null;
     }
 
+    calcFreq(noteNumber){
+        return this.calcPlayNoteRate(noteNumber);
+    }
+
     playNote(e){
         var time = e.duration /* 音符の長さ */ * (e.quantize /* 音の長さ倍率 */ / 100);
         var t0 = e.playbackTime;// 再生開始時間
@@ -970,12 +1140,18 @@ class TrackSoundSource extends TrackSoundData
         let playbackRate = 1.0 * notePlayRate;
         info.bufferSorce.playbackRate.setValueAtTime(playbackRate, t0 + WAIT_SEC);
         if(e.slur){
-            let addTime = this.setSlur(info.bufferSorce.playbackRate, e.slur, t0 + WAIT_SEC, time, e.key, (noteNumber) => {
-                return this.calcPlayNoteRate(noteNumber);
-            });
+            let addTime = this.setSlur(info.bufferSorce.playbackRate, e.slur, t0 + WAIT_SEC, time, e.key);
             time += addTime;
         }
         t1 = t0 + time + info.env.release;
+        if(e.pitch){
+            this.setInstPitch(e, t0 + WAIT_SEC,  t1 + WAIT_SEC, e.pitch);
+        }
+        if(e.volume){
+            this.setInstVolume(e, t0 + WAIT_SEC,  t1 + WAIT_SEC, e.volume);
+        }
+        this.applyFreqTimeLine(info.bufferSorce.playbackRate);
+        this.applyVolumeTimeLine(info.gain.gain);
         // e.playbackTime + e.duration + e.slurDuration
         let offset = getCurrentTime() - t0;
         offset = Math.max(offset, 0);
