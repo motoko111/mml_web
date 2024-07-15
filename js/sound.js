@@ -928,7 +928,7 @@ class TrackSoundWave extends TrackSoundData
             while(n < data.length){
                 for (let i = 0; i < info.countPerHz; i++) {
                     let rate = ((i + 1) / info.countPerHz);
-                    let index = Math.floor(this.oscWaves.length * rate + 0.5);
+                    let index = Math.floor(this.oscWaves.length * rate);
                     index = Math.max(0, Math.min(this.oscWaves.length-1, index));
                     data[n] = this.oscWaves[index];
                     n++;
