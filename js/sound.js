@@ -1,6 +1,6 @@
 const SYNTH_TYPES = ["square","triangle","sine","sawtooth"]
 const NOISE_TYPES = ["white", "brown", "pink"]
-const PULSE_TYPES = [0.5,0.25,0.125,0.75]
+const PULSE_TYPES = [0.0,-0.5,-0.75,0.5]
 const WAIT_SEC = 0
 const WAVE_FORM_SIZE = 1024;
 const NES_CLOCK_COUNT = 1789772.5; // ファミコンのクロック周波数
@@ -251,7 +251,7 @@ class TrackSoundData
                     value:rate,
                     time:next
                 });
-                console.log("rate:" + n + " :" + rate);
+                //console.log("rate:" + n + " :" + rate);
                 if(isEnd) break;
                 n++;
                 if(i == len - 1){
@@ -496,6 +496,10 @@ class TrackSoundData
         return last ? last : next;
     }
 
+    disconnect(info){
+        if(info.lastNode) info.lastNode.disconnect();
+    }
+
     setConnect(info){
         let node = null;
         node = this.connect(node, info.osc);
@@ -542,6 +546,7 @@ class TrackSoundData
         for(let i = 0; i < this.playInfos.length; ++i){
             if(this.playInfos[i].isActive){
                 if(this.playInfos[i].inactiveTime + 0.1 < getCurrentTime()){
+                    //console.log("stopPlayInfo buffer:" + i + "/" + (this.playInfos.length - 1));
                     if(this.playInfos[i].onended != null) this.playInfos[i].onended();
                     this.stopPlayInfo(this.playInfos[i]);
                 }
@@ -556,6 +561,7 @@ class TrackSoundData
                             prev.source.disconnect();
                             prev.source.dispose();
                             prevs.splice(j,1);
+                            //console.log("dispose prev buffer:" + j);
                         }
                     }
                 }
@@ -590,6 +596,10 @@ class TrackSoundData
     stopPlayInfo(info){
         //console.log("stopPlayInfo default");
         info.isActive = false;
+        info.bufferSorce = null;
+        if(info.osc) info.osc.frequency.cancelScheduledValues(0);
+        if(info.gain) info.gain.gain.cancelScheduledValues(0);
+        //this.disconnect(info);
     }
 
     stopPlayInfoAll(){
@@ -624,23 +634,38 @@ class TrackSoundData
     }
 
     stopBufferPlayInfo(info){
-        if(info.bufferSorce != null){
-            //console.log("stopPlayInfo stop info" + info.bufferSorce)
-            info.bufferSorce.stop();
-            info.bufferSorce.disconnect();
-            info.bufferSorce.dispose();
+        try{
+            if(info.bufferSorce != null){
+                //console.log("stopPlayInfo stop info:" + info.index + "/" + (this.playInfos.length - 1) + " prev length:" + (info.prevBufferSources ? info.prevBufferSources.length : ""));
+    
+                //
+                //info.bufferSorce.playbackRate.cancelScheduledValues(0);
+                info.bufferSorce.stop();
+                info.bufferSorce.disconnect();
+                info.bufferSorce.dispose();
+            }
+            if(info.prevBufferSources !== undefined && info.prevBufferSources !== null && info.prevBufferSources.length > 0) {
+                info.prevBufferSources.forEach((prev) => {
+                    //console.log("stopPlayInfo stop prev info" + prev)
+                    //prev.source.playbackRate.cancelScheduledValues(0);
+                    prev.source.stop();
+                    prev.source.disconnect();
+                    prev.source.dispose();
+                });
+                info.prevBufferSources.splice(0,info.prevBufferSources.length);
+                //console.log("info.prevBufferSources.length:" + info.prevBufferSources.length)
+            }
+            info.prevBufferSource = null;
         }
-        if(info.prevBufferSources && info.prevBufferSources.length > 0) {
-            info.prevBufferSources.forEach((prev) => {
-                //console.log("stopPlayInfo stop prev info" + prev)
-                prev.source.stop();
-                prev.source.disconnect();
-                prev.source.dispose();
-            });
-            info.prevBufferSources.splice(0,info.prevBufferSources.length);
-            //console.log("info.prevBufferSources.length:" + info.prevBufferSources.length)
+        catch(e){
+            if(info.bufferSorce != null){
+                info.bufferSorce.dispose();
+            }
+            if(info.prevBufferSources && info.prevBufferSources.length > 0) {
+                info.prevBufferSources.splice(0,info.prevBufferSources.length);
+            }
+            info.prevBufferSource = null;
         }
-        info.prevBufferSource = null;
     }
 
     getOrCreatePlayInfo(forceGetFirst, startTime){
@@ -653,6 +678,10 @@ class TrackSoundData
         }
         else{
             for(let i = 0; i < this.playInfos.length; ++i){
+                //for(let i = 0; i < this.playInfos.length; ++i){
+                //    info = this.playInfos[i];
+                //    break;
+                //}
                 if(!this.playInfos[i].isActive || this.playInfos[i].inactiveTime + 0.1 < startTime){
                     info = this.playInfos[i];
                     break;
@@ -661,7 +690,6 @@ class TrackSoundData
         }
         if(info == null){
             info = this.createPlayInfo();
-            info.playCount = 0;
             this.addPlayInfo(info);
         }
         info.isActive = true;
@@ -739,12 +767,8 @@ class TrackSoundPulse extends TrackSoundData
     }
 
     stopPlayInfo(info){
-        info.isActive = false;
-        info.playCount = Math.max(0,  info.playCount - 1);
         info.osc.stop();
-        //console.log("stopPlayInfo osc stop");
-        //console.log(info.osc);
-        //if(info.lastNode) info.lastNode.disconnect();
+        super.stopPlayInfo(info);
     }
 
     calcFreq(noteNumber){
@@ -766,6 +790,7 @@ class TrackSoundPulse extends TrackSoundData
             return;
         }
 
+        this.setConnect(info);
         this.setEffects(info, t0, e);
 
         info.osc.width.setValueAtTime(PULSE_TYPES[e.tone], t0 + WAIT_SEC);
@@ -842,10 +867,7 @@ class TrackSoundWave extends TrackSoundData
 
     stopPlayInfo(info){
         this.stopBufferPlayInfo(info);
-
-        info.isActive = false;
-        info.bufferSorce = null;
-        //if(info.lastNode) info.lastNode.disconnect();
+        super.stopPlayInfo(info);
     }
 
     getWaveValue(n){
@@ -1072,14 +1094,11 @@ class TrackSoundNoise extends TrackSoundData
 
     stopPlayInfo(info){
         this.stopBufferPlayInfo(info);
-
-        info.isActive = false;
-        info.bufferSorce = null;
-        //if(info.lastNode) info.lastNode.disconnect();
+        super.stopPlayInfo(info);
     }
 
     calcFreq(noteNumber){
-        return this.calcPlayNoteRate(noteNumber) * ((NES_CLOCK_COUNT / 202) / sampleRate);
+        return this.calcPlayNoteRate(noteNumber) * ((NES_CLOCK_COUNT / 202) / Tone.context.sampleRate);
     }
 
     playNote(e){
@@ -1133,7 +1152,6 @@ class TrackSoundNoise extends TrackSoundData
         info.bufferSorce.start(t0 + WAIT_SEC);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.bufferSorce.stop(t1 + WAIT_SEC);
-        info.playCount++;
 
         this.setPlayInfoTime(info, t0 + WAIT_SEC, t1 + WAIT_SEC);
     }
@@ -1163,9 +1181,7 @@ class TrackSoundSource extends TrackSoundData
 
     stopPlayInfo(info){
         this.stopBufferPlayInfo(info);
-
-        info.isActive = false;
-        info.bufferSorce = null;
+        super.stopPlayInfo(info);
     }
 
     calcFreq(noteNumber){
@@ -1178,7 +1194,6 @@ class TrackSoundSource extends TrackSoundData
         var t1 = t0 + time + 0.5;
         var volume = (e.velocity / 128); // 倍率
 
-        console.log(e.chord);
         let info = this.getOrCreatePlayInfo(!e.chord, t0 + WAIT_SEC);
 
         this.setCommands(info, t0, e.commands);

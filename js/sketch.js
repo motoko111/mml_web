@@ -47,6 +47,7 @@ let repeatEndLineView = null;
 let repeatStartTime = -1;
 let repeatEndTime = -1;
 let enableRepeat = false;
+let drawNoteWidthRate = 1.0;
 
 let postProcess;
 let bitFont;
@@ -110,12 +111,22 @@ function draw() {
 
   let offsetTime = getEmitterCurrentPlayTime();
   let offsetLag = isPlayEditEmitter() ? 0.1 : 0;
+
+  setDrawNoteWidthRate(1);
+  if(G_NoteAnalysis){
+    if(G_NoteAnalysis.getFirstTempo() >= 300){
+      setDrawNoteWidthRate(0.5);
+    }
+    else if(G_NoteAnalysis.getFirstTempo() >= 200){
+      setDrawNoteWidthRate(0.75);
+    }
+  }
   
   let w = DRAW_KEYBOARD_WIDTH;
   let h = DRAW_NOTE_HEIGHT;
   let x = 0;
   let y = 0;
-  let note_w = DRAW_NOTE_WIDTH;
+  let note_w = getOneNoteWidth();
   let add_y = 0;
   let note = DefaultNoteNumber;
   let note_types = [0,1,0,1,0,0,1,0,1,0,1,0];
@@ -152,10 +163,10 @@ function draw() {
       }
       for(let n = 0; n < 1; ++n){
         pg.strokeWeight(0.2)
-        let draw_note_w = Math.min(canvas.width - DRAW_KEYBOARD_WIDTH,note_w*100);
+        let draw_note_w = Math.min(canvas.width - DRAW_KEYBOARD_WIDTH,note_w*100*getDrawNoteWidthRateReverse());
         pg.rect(side_x,y,draw_note_w,h)
         pg.strokeWeight(1)
-        side_x += note_w*100
+        side_x += note_w*100*getDrawNoteWidthRateReverse();
       }
       
       y += add_y;
@@ -272,7 +283,7 @@ function drawAnalysis(analysis, offsetTime){
         KeyboardStatus[note.noteNumber + note.key] = i
       }
       else{
-        if(getNoteX((noteTime - offsetTime) / baseTime) < 0) continue;
+        if(getNoteX(((noteTime + duration) - offsetTime) / baseTime) < 0) continue;
       }
       let right = 0;
       right = drawNote(note.trackNumber, offsetTime, noteTime , note.noteNumber + note.key, length8, baseTime, rangeIn);
@@ -304,8 +315,24 @@ function drawAnalysis(analysis, offsetTime){
   return true;
 }
 
+function getOneNoteWidth(){
+  return DRAW_NOTE_WIDTH * getDrawNoteWidthRate();
+}
+
+function setDrawNoteWidthRate(rate){
+  drawNoteWidthRate = rate;
+}
+
+function getDrawNoteWidthRate(){
+  return drawNoteWidthRate;
+}
+
+function getDrawNoteWidthRateReverse(){
+  return 1/drawNoteWidthRate;
+}
+
 function getNoteX(rate){
-  return canvas.width / 2 + rate * DRAW_NOTE_WIDTH
+  return canvas.width / 2 + rate * getOneNoteWidth();
 }
 
 function getNoteY(noteNumber){
@@ -317,7 +344,7 @@ function drawNote(trackNumber, offsetTime, noteTime, noteNumber, length, oneNote
   let widthRate = length; // 8/8
   let noteColor = TRACK_COLORS[trackNumber];
   if(rangeIn) noteColor = color(red(noteColor) + 75,green(noteColor) + 75,blue(noteColor) + 75);
-  let w = DRAW_NOTE_WIDTH * widthRate;
+  let w = getOneNoteWidth() * widthRate;
   let h = DRAW_NOTE_HEIGHT;
   let x = getNoteX(startPos);
   let y = getNoteY(noteNumber);
@@ -444,7 +471,7 @@ function initNoteLineView(){
   repeatEndLineView = new NoteLine(2,DRAW_NOTE_CANVAS_HEIGHT, color(255,255,255));
   playLineView = new NoteLine(1, DRAW_NOTE_CANVAS_HEIGHT, color(255,255,255));
   splitLineViews = [];
-  for(let i = 0; i < 100; ++i){
+  for(let i = 0; i < 200; ++i){
     splitLineViews.push(new NoteLine(1, DRAW_NOTE_CANVAS_HEIGHT, color(255,255,255,60)));
   }
 }
@@ -514,7 +541,7 @@ function drawNoteSplitLineView(analysis, offsetTime){
         }
       }
       sumIndex++;
-      now_x += DRAW_NOTE_WIDTH;
+      now_x += getOneNoteWidth();
     }
   }
 
