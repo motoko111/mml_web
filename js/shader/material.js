@@ -10,12 +10,14 @@ class Material{
         //pg.rect(0,0,100,100)
         //pg.pop()
 
+        /*
         shader(this.shader);
 
         this.shader.setUniform('u_resolution', [pg.width, pg.height]);
         this.shader.setUniform('u_tex', pg);
         this.shader.setUniform(`u_time`, frameCount / 35);
-
+        */
+       
         /*
         // vertex shaderのコンパイルエラーを取得して表示
         const messageVert = gl.getShaderInfoLog(this.shader._vertShader);

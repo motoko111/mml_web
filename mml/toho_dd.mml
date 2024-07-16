@@ -12,7 +12,7 @@
 // @m1 @m0 ミュートON/OFF
 // @w[0～15,n] Waveチャンネルの場合、波形を変更
 
-t158 l8 o4 q90 v50 @0 @e[0,0.1,0.6,0.2] @m0 @w[0,15]
+t158 l8 o4 q90 v50 @1 @e[0,0.1,0.6,0.2] @m0 @w[0,15]
 /:
 d<a>d<g>d<fe>c<ef>cfec<g>c<ef>cfgecfec<g>d<af>c<e>
 d<a>d<g>d<fe>c<ef>cfec<g>c<ef>cfgecfec<g>d<af>c<e>
@@ -34,7 +34,7 @@ e4g4f8<a8>d8f8e8c4 f4<g8>c8f8e8c4 f4<a8>c8f8e8c4 <g>
 :/2
 ;
 
-t158 l8 o4 q90 v25 @0 @e[0,0.1,0.6,0.2] @m0 @w[0,0,0,15,15,15]
+t158 l8 o4 q90 v25 @1 @e[0,0.1,0.6,0.2] @m0 @w[0,0,0,15,15,15]
 r16.
 /:
 d<a>d<g>d<fe>c<ef>cfec<g>c<ef>cfgecfec<g>d<af>c<e>

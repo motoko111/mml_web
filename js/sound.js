@@ -110,10 +110,16 @@ class TrackSoundData
         this.arpeggio = {length:64,values:[]};
         this.vibrato = {frequency:0,depth:0,delay:0,delayDuration:0};
         this.pitch = {pitch:0,delay:0,delayDuration:0};
+        this.effectVolume = {volume:15,delay:0,delayDuration:0,applyTime:-9999};
         this.reverb = {decay:0.001,preDelay:0};
         this.filter = {low:{freq:0,gain:1,q:1},mid:{gain:1},high:{freq:440*Math.pow(2,20),gain:1,q:1}};
         this.freqTimeline = [];
         this.volumeTimeline = [];
+
+        let _this = this;
+        this.playInfos.forEach((info) => {
+            _this.resetPlayInfo(info);
+        });
     }
 
     checkParam(params, index){
@@ -270,6 +276,28 @@ class TrackSoundData
         }
     }
 
+    setEffectVolume(info, gain, t0, params)
+    {
+        if(!params) return;
+        let volume = params.volume;
+        let start = t0 + params.delay;
+        let next = start + params.delayDuration;
+        let rate = volume / 15;
+        if(volume >= 0){
+            if(info.effectGainUpdateTime < params.applyTime){
+                if(params.delayDuration <= 0){
+                    gain.gain.setValueAtTime(rate,start);
+                }
+                else{
+                    gain.gain.setValueAtTime(gain.gain.getValueAtTime(start),start);
+                    gain.gain.linearRampToValueAtTime(rate, next);
+                }
+                info.effectGainUpdateTime = t0;
+                //console.log("setEffectVolume [" + info.index + "] applyTime:" + this.effectVolume.applyTime + " effectGainUpdateTime:" + info.effectGainUpdateTime);
+            }
+        }
+    }
+
     applyFreqTimeLine(frequency){
         if(!this.freqTimeline || this.freqTimeline.length < 1) return;
         for(let i = 0; i < this.freqTimeline.length; ++i){
@@ -314,6 +342,20 @@ class TrackSoundData
                 break;
                 case "set":{
                     gain.setValueAtTime(volumeInfo.value, volumeInfo.time);
+                }
+                break;
+                case "multipleLiner":{
+                    let vol = gain.getValueAtTime(volumeInfo.start);
+                    let next = vol * volumeInfo.value;
+                    gain.linearRampToValueAtTime(next, volumeInfo.time);
+                    //console.log(freqInfo);
+                }
+                break;
+                case "multipleSet":{
+                    let vol = gain.getValueAtTime(volumeInfo.time);
+                    let next = vol * volumeInfo.value;
+                    gain.setValueAtTime(next, volumeInfo.time);
+                    //console.log(freqInfo);
                 }
                 break;
             }
@@ -394,12 +436,16 @@ class TrackSoundData
             vib.frequency.setValueAtTime(params.frequency,t0 + params.delay);
             vib.depth.setValueAtTime(params.depth,t0 + params.delay);
             if(params.delay > 0 && params.delayDuration > 0){
+                vib.wet.cancelScheduledValues(t0);
                 vib.wet.setValueAtTime(0.0, t0);
-                vib.wet.setTargetAtTime(1.0, t0 + params.delay, params.delayDuration);
+                vib.wet.setValueAtTime(0.0, t0 + params.delay);
+                vib.wet.linearRampToValueAtTime(1.0, t0 + params.delay + params.delayDuration);
             }
             else{
+                vib.wet.cancelScheduledValues(t0);
                 vib.wet.setValueAtTime(0.0, t0);
-                vib.wet.setValueAtTime(1.0, t0 + params.delay);
+                vib.wet.setValueAtTime(0.0, t0 + params.delay);
+                vib.wet.linearRampToValueAtTime(1.0, t0 + params.delay);
             }
         }
         else{
@@ -429,6 +475,7 @@ class TrackSoundData
         this.setPan(info.panner, t0, e.pan);
         this.setEnvelope(info.env, e.envelope);
         this.setPitch(t0, this.pitch);
+        this.setEffectVolume(info, info.effectGain, t0, this.effectVolume);
         this.setVibrato(info.vib, t0, this.vibrato);
         this.setReverb(info.rev, this.reverb);
         this.setFilter(info.filter, this.filter);
@@ -445,6 +492,14 @@ class TrackSoundData
         switch(command.command){
             case "reset":{
                 this.reset();
+            }break;
+            // 音量変更
+            case "a":{
+                //console.log("this.effectVolume.applyTime=" + this.effectVolume.applyTime);
+                this.effectVolume.applyTime = t0;
+                this.effectVolume.volume = this.getParam(command.value, 0, 15);
+                this.effectVolume.delay = this.getParam(command.value, 1, 0, 0);
+                this.effectVolume.delayDuration = this.getParam(command.value, 2, 0, 0);
             }break;
             // 高速アルペジオ
             case "c":{
@@ -518,6 +573,8 @@ class TrackSoundData
         if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
         node = this.connect(node, info.gain);
         if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
+        node = this.connect(node, info.effectGain);
+        if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
         node = this.connect(node, info.panner);
         if(!info.baseConnectNode && baseNode != node) info.baseConnectNode = node;
         node = this.connect(node, info.waveform);
@@ -534,6 +591,8 @@ class TrackSoundData
         info.rev = new Tone.Reverb();
         info.filter = new SoundFilter();
         info.gain = new Tone.Gain(1);
+        info.effectGainUpdateTime = -9999;
+        info.effectGain = new Tone.Gain(1);
         info.panner = new Tone.Panner(0);
     }
 
@@ -591,6 +650,18 @@ class TrackSoundData
     createPlayInfo(){
         let info = {}
         return info
+    }
+
+    resetPlayInfo(info){
+        info.effectGainUpdateTime = -9999;
+        if(info.gain) {
+            info.gain.gain.cancelScheduledValues(0);
+            info.gain.gain.value = 1.0;
+        }
+        if(info.effectGain) {
+            info.effectGain.gain.cancelScheduledValues(0);
+            info.effectGain.gain.value = 1.0;
+        }
     }
 
     stopPlayInfo(info){
@@ -1024,7 +1095,6 @@ function createWhiteNoise(duration) {
     const buffer = Tone.context.createBuffer(1, bufferSize, sampleRate);
     const data = buffer.getChannelData(0);
 
-    //console.log("bufferSize=" + bufferSize)
     for (let i = 0; i < bufferSize; i++) {
         data[i] = Math.random() * 2 - 1; // -1から1のランダムな値を設定
     }

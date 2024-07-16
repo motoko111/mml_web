@@ -72,7 +72,7 @@ function setup() {
     color(91, 130, 194),
     color(0, 255, 110),
     color(255, 60, 60),
-    color(194, 130, 91),
+    color(255, 167, 237),
     color(201, 133, 93),
     color(196, 165, 92),
     color(163, 196, 92),
