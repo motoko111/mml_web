@@ -1954,6 +1954,24 @@ var MMLParser = (function () {
           value: valueList
         };
       }
+      // inst wave
+      else if(nextStr == "W")
+      {
+        this.scanner.expect("w");
+        this.scanner.expect("[");
+        let valueList = []
+        let _this4 = this;
+        this._readUntil("]", function () {
+          let val = _this4._readArgument(/\d+(\.\d+)?/);
+          if(val == null) _this4.scanner.next();
+          else valueList.push(val);
+        });
+        this.scanner.expect("]");
+        return {
+          type: _Syntax2["default"].Wave,
+          value: valueList
+        };
+      }
       // pitch
       else if(nextStr == "p"){
         this.scanner.expect("p");

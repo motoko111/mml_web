@@ -770,5 +770,5 @@ let test2 = async() => {
     link.download = 'out.mid';
     link.click();
 }
-test();
+//test();
 //test2();
