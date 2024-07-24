@@ -92,12 +92,12 @@ G_AudioSourceLoader = new AudioSourceLoader();
 // 共通で読み込む
 const createAudioBuffer = async () => {
     let resources = [
-        'assets/audio/000_knoc.wav'
+        'assets/audio/000_A4.mp3'
         ,'assets/audio/001_critical.wav'
         ,'assets/audio/002_fly.wav'
         ,'assets/audio/003_cancel2.wav'
         ,'assets/audio/004_tam.wav'
-        ,'assets/audio/005_A4.mp3'
+        ,'assets/audio/005_knoc.wav'
     ]
     for(let i = 0; i < resources.length; ++i){
         let file = resources[i];

@@ -37,7 +37,7 @@ body{
 .tool-bar {
     user-select: none;
     background-color: rgba(50, 50, 50, 1);
-    padding: 8px 2px;
+    padding: 2px 2px;
 }
 
 .button {
@@ -45,7 +45,7 @@ body{
     display: inline-block;
     padding: 6px;
     text-align: center;
-    line-height: 12px;
+    line-height: 10px;
     color: #fff;
     border: 1px solid #f0f0f0;
     border-radius: 3px;
@@ -264,6 +264,76 @@ input[type="checkbox"]:checked:before {
     padding: 20px;
     border-radius: 5px;
     z-index: 1020;
+}
+
+.top-toolbar {
+    user-select: none;
+    background-color: #333;
+    border: 1px solid #5e5e5e;
+    color: #fff;
+    display: flex;
+    padding: 2px;
+    font-size: 12px;
+    position: relative;
+}
+
+.top-toolbar-item {
+    user-select: none;
+    padding: 0px 10px;
+    cursor: pointer;
+    transition: background-color 0.1s;
+}
+
+.top-toolbar-item:hover {
+    background-color: #555;
+}
+
+.dropdown-menu {
+    user-select: none;
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #333;
+    border: 1px solid #5e5e5e;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+.dropdown-menu.active {
+    display: inline-block;
+}
+
+.menu-item {
+    padding: 2px 12px;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.menu-item-line {
+    padding: 0.5px 0px;
+    background-color: #5e5e5e;
+    color: #fff;
+}
+.menu-item-label {
+    font-size: 12px;
+    padding: 0px 0px;
+    height: 0;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+.menu-item-icon {
+    width: 12px;
+    height: 12px;
+    margin-right: 12px;
+}
+
+.menu-item:hover {
+    background-color: #1c76ca;
 }
 
 .hidden {

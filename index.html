@@ -13,6 +13,8 @@
   <script src="js/editor_mml_defines.js"></script>
   <script src="js/mml-emitter.js"></script>
   <script src="js/mml_parser.js"></script>
+  <script src="js/midi_parser.js"></script>
+  <script src="js/fami_tracker_parser.js"></script>
   <script src="js/common.js"></script>
   <script src="js/audio_loader.js"></script>
   <script src="js/note_analysis.js"></script>
@@ -28,6 +30,7 @@
   <script src="js/bpm_analyser.js"></script>
   <script src="js/popup.js"></script>
   <script src="js/dialog.js"></script>
+  <script src="js/toolbar.js"></script>
   <script src="js/main.js"></script>
 </head>
 <body>
@@ -38,18 +41,18 @@
         <script src="js/sketch.js"></script>
     </article>
     <div class="content">
+      <div class="top-toolbar" id="top-toolbar">
+      </div>
       <div class="tool-bar center">
-        <button class= "button" id="button" onclick="newFile();"><img src="assets/icon/new.png"/><span class="button-label">new</span></button>
         <!--
-        <select class= "dropdown" id="sample">
-        </select>
-        -->
-        <button class= "button button-blue" id="saveButton" onclick="saveLocalStorage();"><img src="assets/icon/save.png"/><span class="button-label">save (local storage)</span></button>
+        <button class= "button" id="button" onclick="newFile();"><img src="assets/icon/new.png"/><span class="button-label">new</span></button>
         <button class= "button button-red" id="deleteButton" onclick="deleteLocalStorage();"><img src="assets/icon/delete.png"/><span class="button-label">delete (local storage)</span></button>
         <button class= "button" id="exportButton" onclick="exportFile();"><img src="assets/icon/export.png"/><span class="button-label">export</span></button>
-        <button class= "button" id="importButton" onclick="document.getElementById('fileInput').click();"><img src="assets/icon/folder.png"/><span class="button-label">import</span></button>
+        <button class= "button" id="importButton" onclick="importFile();"><img src="assets/icon/folder.png"/><span class="button-label">import</span></button>
+        -->
+        <button class= "button button-blue" id="saveButton" onclick="saveLocalStorage();"><img src="assets/icon/save.png"/><span class="button-label">save</span></button>
+        <button class= "button" type="button" id="button" onclick="importAudioFile();"><img src="assets/icon/audio.png"/><span class="button-label">音源import</span></button>
         <input type="file" id="fileInput" style="display: none;"/>
-        <button class= "button" type="button" id="button" onclick="document.getElementById('audioSourceInput').click();"><img src="assets/icon/audio.png"/><span class="button-label">音源import</span></button>
         <input type="file" id="audioSourceInput" multiple directory webkitdirectory style="display: none;"/>
         <button class= "button button-play" id="playButton" onclick="start();"><img style="margin-right:0px;" src="assets/icon/play.png"/></button>
         <button class= "button button-stop hidden" id="stopButton" onclick="stop();"><img style="margin-right:0px;" src="assets/icon/pause.png"/></button>
@@ -80,7 +83,8 @@
       </div>
         <div class="bottom">
           <div class="bottom-left" style="width: 70%;">
-            <div id="editor" style="margin-top: 4px; float:left; width: 100%; height: 440px"></div>
+            
+            <div id="editor" style="margin-top: 4px; float:left; width: 100%; height: 400px"></div>
           </div>
           <div class="bottom-right" style="width: 30%;">
             <div id = "editor_track_root">
@@ -91,7 +95,7 @@
                 while( root.firstChild ){
                   root.removeChild( root.firstChild );
                 }
-                for(let i = 0;i<10;++i){
+                for(let i = 0;i<9;++i){
                   let track_root = document.createElement("div");
                   track_root.style = "display: flex; width: 100%;";
                   let wave = document.createElement("canvas");

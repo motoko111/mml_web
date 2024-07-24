@@ -269,9 +269,9 @@ class MMLEditor{
         
     }
 
-    initEditor(){
+    initEditor(editorSize = 9){
         this.createEditor()
-        for(let i = 0; i < 10; ++i) this.createLogEditor(i)
+        for(let i = 0; i < editorSize; ++i) this.createLogEditor(i)
     }
     // スクロール位置を最後にする関数
     scrollToBottom(editor) {

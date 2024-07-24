@@ -1,0 +1,77 @@
+// Sample
+@[sample]
+t116 l1 o4 q90 v200 @104 @e[0,0,1.0,0.01] @m0
+//v400 @c[f,c4,2,c5,0]
+r32r32a^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^&a8^^
+;
+
+// Sample
+// cd-e-fga-b-
+// cc+d+fgg+a+
+@[pulse]
+t116 l8 o3 q90 v10 @3 @e[0,0,1.0,0.2] @m0
+//@[sample] v400 @0
+/:r:/20
+/:
+a+a+a+a+ g+g+g+g+ ffff d+d+d+d+ 
+d+d+d+d+ d+d+d+d+ ffff ff g16g+16a+16>c<
+r16a+a+a+ g+g+g+g+ ffff d+d+d+d+ 
+ffff d+d+d+d+ 
+>ffff ffff d+d+d+d+ d+d+d+d+ c+c+c+c+
+ffff cccc cccc
+c+c+c+c+ c+c+c+c+ cccc cccc
+ffff ffff cccc cccc<
+
+a+a+a+a+ g+g+g+g+ ffff d+d+d+d+ 
+d+d+d+d+ d+d+d+d+ ffff ff g16g+16a+16>c<
+r16a+a+a+ g+g+g+g+ ffff d+d+d+d+ 
+ffff d+d+d+d+ 
+A=>c16<a+16g16d+16
+A A A>d+16c+16<a+16g+16
+A A A>d+16c+16<a+16g+16
+A A A>d+16c+16<a+16g+16
+A A>d+^rr
+ffff ffff d+d+d+d+ d+d+d+d+ c+c+c+c+
+ffff cccc cccc
+c+c+c+c+ c+c+c+c+ cccc cccc
+ffff ffff cccc cccc<
+:/2
+;
+// Sample
+// cd-e-fga-b-
+// cc+d+fgg+a+
+@[pulse]
+t116 l8 o4 q90 v20 @1 @e[0,0,1.0,0.2] @m0
+//@[sample] v400 @0
+/:r:/4
+a+rg+ra64a+64&a+32&a+16r16r16
+d+16f16g16g+16a+^^a+16g+16g^d+^
+
+/:
+>c^<a+>c<gg+d+^fa+gfd+^c^
+c+cc+fg^g+d+
+f^>c^<a+^>d+^
+
+c^<a+>c<gg+d+^fa+gfd+^c^
+
+c+d+fgg+^a+>cf^^^^^^g16g+16a+^rgd+^^r
+>c^^<a+16>c16<g^^g16d+16f^^f16d+16c^^r
+c+^^^^^^d+16f16g^^g+16a+16>c^^r
+c^^<g+16a+16f^^d+16f16c^^<a+16>c16d+^^r<
+
+>c^<a+>c<gg+d+^fa+gfd+^c^
+c+cc+fg^g+d+
+f^>c^<a+^>d+^
+
+c^<a+>c<gg+d+^fa+gfd+^c^
+c+d+fgg+^a+>cd+^^^^^^^^^^^^^^^rr rrrrrrrrrrrrrr
+
+f^^^^^^g16g+16a+^.r16gd+^^r
+>c^^<a+16>c16<g^^g16d+16f^^f16d+16c^^r
+c+^^^^^^d+16f16g^^g+16a+16>c^^r
+c^^<g+16a+16f^^d+16f16c^^<a+16>c16d+^^r<
+:/2
+
+;
+
+

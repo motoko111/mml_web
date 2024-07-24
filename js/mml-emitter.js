@@ -1010,6 +1010,7 @@ exports["default"] = {
   wave: null,
   pitch: null,
   volume: [15],
+  durty: null,
   detune: 0,
   pan: 0,
   slur: null,
@@ -1070,6 +1071,7 @@ var MMLIterator = (function () {
     this._wave = _DefaultParams2["default"].wave;
     this._pitch = _DefaultParams2["default"].pitch;
     this._volume = _DefaultParams2["default"].volume;
+    this._durty = _DefaultParams2["default"].durty;
     this._detune = _DefaultParams2["default"].detune;
     this._pan = _DefaultParams2["default"].pan;
     this._slur = _DefaultParams2["default"].slur;
@@ -1343,6 +1345,7 @@ var MMLIterator = (function () {
       let wave = this._wave;
       let pitch = this._pitch;
       let volume = this._volume;
+      let durty = this._durty;
       let detune = this._detune;
       let pan = this._pan;
       let currentLength = this._currentLength;
@@ -1396,6 +1399,7 @@ var MMLIterator = (function () {
           mute:mute,
           pitch:pitch,
           volume:volume,
+          durty:durty,
           pan:pan,
           wave:wave,
           slur:slur,
@@ -1516,6 +1520,12 @@ var MMLIterator = (function () {
     key: _Syntax2["default"].Volume,
     value: function value(command) {
       this._volume = command.value !== null ? command.value : _DefaultParams2["default"].volume;
+    }
+  },
+  {
+    key: _Syntax2["default"].Durty,
+    value: function value(command) {
+      this._durty = command.value !== null ? command.value : _DefaultParams2["default"].durty;
     }
   },
   {
@@ -2010,6 +2020,28 @@ var MMLParser = (function () {
           value: valueList
         };
       }
+      // durty
+      else if(nextStr == "d"){
+        this.scanner.expect("d");
+        this.scanner.expect("[");
+        let valueList = []
+        let _this4 = this;
+        this._readUntil("]", function () {
+          let val = _this4._readArgument(/(\+|\-)?\d+(\.\d+)?/);
+          if(val == null) {
+            val = _this4._readStr("L");
+            if(val == null){
+              _this4.scanner.next();
+            }else valueList.push(val);
+          }
+          else valueList.push(val);
+        });
+        this.scanner.expect("]");
+        return {
+          type: _Syntax2["default"].Durty,
+          value: valueList
+        };
+      }
       // cmd
       else if(nextStr == "c"){
         this.scanner.expect("c");
@@ -2376,6 +2408,7 @@ exports["default"] = {
   Wave: "Wave",
   Pitch: "Pitch",
   Volume: "Volume",
+  Durty: "Durty",
   Detune: "Detune",
   Pan: "Pan",
   InfiniteLoop: "InfiniteLoop",

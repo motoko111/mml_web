@@ -136,6 +136,34 @@ function download(){
   drawUpdate();
 }
 
+function downloadMidi(){
+  let parser = G_NoteAnalysis.toMidi();
+  let bytes = parser.toBytes();
+  var blob = new Blob([bytes], { type: 'audio/midi' });
+  var link = document.createElement('a');
+  link.href = window.URL.createObjectURL(blob);
+  link.download = 'out.mid';
+  link.click();
+}
+
+function downloadFamitrackerText(){
+  let parser = G_NoteAnalysis.toFamiTrackerText();
+  let txt = parser.toText();
+  var blob = new Blob([txt], { type: 'text/plain' });
+  var link = document.createElement('a');
+  link.href = window.URL.createObjectURL(blob);
+  link.download = 'out.txt';
+  link.click();
+}
+
+function importFile(){
+  document.getElementById('fileInput').click();
+}
+
+function importAudioFile(){
+  document.getElementById('audioSourceInput').click();
+}
+
 function exportFile(){
   exportFileAsync();
 }
@@ -144,6 +172,37 @@ const exportFileAsync = async () => {
   try{
   // ファイル保存ダイアログを表示して FileSystemFileHandle オブジェクトを取得
   const fh = await window.showSaveFilePicker({ suggestedName: mmlFilePath == null ? "export.mml" : mmlFilePath });
+
+  // FileSystemWritableFileStream オブジェクトを取得
+  const stream = await fh.createWritable();
+  
+  saveLocalStorage();
+  
+  // テキストデータの Blob オブジェクトを生成
+  const content = mmlEditor.editor.getValue();
+  const blob = new Blob([content], { type: 'text/plain' });
+
+  // テキストデータをファイルに書き込む
+  await stream.write(blob);
+  
+  // ファイルを閉じる
+  await stream.close();
+  
+  // 保存されたファイルのファイル名をコンソールに出力
+  console.log(fh.name);
+  }
+  catch(e){
+  }
+}
+
+function exportFileMidi(){
+  exportFileMidiAsync();
+}
+
+const exportFileMidiAsync = async () => {
+  try{
+  // ファイル保存ダイアログを表示して FileSystemFileHandle オブジェクトを取得
+  const fh = await window.showSaveFilePicker({ suggestedName: "export.mid" });
 
   // FileSystemWritableFileStream オブジェクトを取得
   const stream = await fh.createWritable();
@@ -667,10 +726,10 @@ function setupMainTick(){
     updateIcon();
     if(isPlayMainEmitter() ){
       if(isEnableRepeat() && getEmitterCurrentPlayTime() > getRepeatEndTime()){
-        repeatRewind();
+        if(Math.abs(getRepeatEndTime() - getRepeatStartTime())>0.01) repeatRewind();
       } else if(getEmitterCurrentPlayTime() > G_NoteAnalysis.getDuration()){
         if(isEnableRepeat()){
-          repeatRewind();
+          if(Math.abs(getRepeatEndTime() - getRepeatStartTime())>0.01) repeatRewind();
         }
         else{
           stop();
@@ -684,6 +743,35 @@ function setupMainTick(){
     handler.id = requestAnimationFrame(loop);
   };
   handler.id = requestAnimationFrame(loop);
+}
+
+function setupToolbar(){
+  let toolbar = new Toolbar("top-toolbar")
+  let file = new ToobarItem("ファイル");
+  file.addChild(new ToobarItem("new", () => { newFile(); }, "assets/icon/new.png"));
+  file.addChild(new ToobarItem("save Ctrl+S", () => { saveLocalStorage(); }, "assets/icon/save.png"));
+  file.addChild(new ToobarLine());
+  file.addChild(new ToobarItem("export", () => { exportFile(); }, "assets/icon/export.png"));
+  file.addChild(new ToobarItem("export(SMF)", () => { downloadMidi(); }, "assets/icon/export.png"));
+  file.addChild(new ToobarItem("export(FamiTrackerText)", () => { downloadFamitrackerText(); }, "assets/icon/export.png"));
+  file.addChild(new ToobarLine());
+  file.addChild(new ToobarItem("import", () => { importFile(); }, "assets/icon/folder.png"));
+  file.addChild(new ToobarItem("音源import", () => { importAudioFile(); }, "assets/icon/audio.png"));
+  file.addChild(new ToobarLine());
+  file.addChild(new ToobarItem("delete local storage", () => { deleteLocalStorage(); }, "assets/icon/delete.png"));
+  toolbar.nodes.push(file);
+
+  let config = new ToobarItem("環境設定");
+  config.addChild(new ToobarItem("MIDIキーボード接続", () => { setupMidiKeyboard(); }, "assets/icon/keyboard.png"));
+  config.addChild(new ToobarItem("MIDIキーボードの入力をテキストに出力する", () => { setupMidiKeyboard(); }, "assets/icon/keyboard.png"));
+  toolbar.nodes.push(config);
+
+  let editor = new ToobarItem("エディタ");
+  editor.addChild(new ToobarItem("文字サイズ拡大", () => { addFontSize(1); }, "assets/icon/big.png"));
+  editor.addChild(new ToobarItem("文字サイズ縮小", () => { addFontSize(-1); }, "assets/icon/small.png"));
+  toolbar.nodes.push(editor);
+
+  toolbar.build();
 }
 
 var initPage = async () => {
@@ -712,6 +800,7 @@ var initPage = async () => {
   initDocument();
 
   setupMainTick();
+  setupToolbar();
 
   mmlEditor.setEnableEditPlay(true);
 

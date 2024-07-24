@@ -49,6 +49,7 @@ class TrackSound
                             case "saw": return new TrackSoundSaw();
                             case "noise": return new TrackSoundNoise();
                             case "sample": return new TrackSoundSource();
+                            case "fm": return new TrackSoundFM();
                         }
                     }
                 }
@@ -115,6 +116,7 @@ class TrackSoundData
         this.filter = {low:{freq:0,gain:1,q:1},mid:{gain:1},high:{freq:440*Math.pow(2,20),gain:1,q:1}};
         this.freqTimeline = [];
         this.volumeTimeline = [];
+        this.durtyTimeline = [];
 
         let _this = this;
         this.playInfos.forEach((info) => {
@@ -298,6 +300,53 @@ class TrackSoundData
         }
     }
 
+    
+
+    setInstDurty(e, t0, t1, params)
+    {
+        if(!params) {
+            return;
+        }
+        let len = params.length;
+        let maxTime = t1;
+        let next = t0;
+        let _this = this;
+        let n = 0;
+        let loopPoint = -1;
+        for(let i = 0; i < len; ++i){
+            let param = this.getParam(params, i, 0, 0);
+            if(param == "L"){
+                loopPoint = i;
+            }
+            else{
+                let durty = ( param >= 0 && param < PULSE_TYPES.length ) ? PULSE_TYPES[param] : 0;
+                next = (n+1)/60 + t0;
+                let isEnd = maxTime <= next;
+                next = isEnd ? maxTime : next;
+                _this.durtyTimeline.push({
+                    type:"liner",
+                    value:durty,
+                    time:next
+                });
+                //console.log("rate:" + n + " :" + rate);
+                if(isEnd) break;
+                n++;
+                if(i == len - 1){
+                    if(loopPoint >= 0){
+                        i = loopPoint;
+                    }
+                    else{
+                        _this.durtyTimeline.push({
+                            type:"liner",
+                            value:durty,
+                            time:maxTime
+                        });
+                    }
+                }
+            }
+        }
+    }
+
     applyFreqTimeLine(frequency){
         if(!this.freqTimeline || this.freqTimeline.length < 1) return;
         for(let i = 0; i < this.freqTimeline.length; ++i){
@@ -361,6 +410,38 @@ class TrackSoundData
             }
         }
         this.volumeTimeline.splice(0);
+    }
+
+    applyDurtyTimeLine(durty){
+        if(!this.durtyTimeline || this.durtyTimeline.length < 1) return;
+        for(let i = 0; i < this.durtyTimeline.length; ++i){
+            let durtyInfo = this.durtyTimeline[i];
+            switch(durtyInfo.type){
+                case "liner":{
+                    durty.linearRampToValueAtTime(durtyInfo.value, durtyInfo.time);
+                }
+                break;
+                case "set":{
+                    durty.setValueAtTime(durtyInfo.value, durtyInfo.time);
+                }
+                break;
+                case "multipleLiner":{
+                    let vol = gain.getValueAtTime(durtyInfo.start);
+                    let next = vol * durtyInfo.value;
+                    durty.linearRampToValueAtTime(next, durtyInfo.time);
+                    //console.log(durtyInfo);
+                }
+                break;
+                case "multipleSet":{
+                    let vol = gain.getValueAtTime(durtyInfo.time);
+                    let next = vol * durtyInfo.value;
+                    durty.setValueAtTime(next, durtyInfo.time);
+                    //console.log(durtyInfo);
+                }
+                break;
+            }
+        }
+        this.durtyTimeline.splice(0);
     }
 
     setArpeggio_bk(e){
@@ -559,6 +640,9 @@ class TrackSoundData
         let node = null;
         node = this.connect(node, info.osc);
         node = this.connect(node, info.bufferSorce);
+        if(info.ope){
+            node = this.connectFM(node, info);
+        }
         let baseNode = node;
         info.baseConnectNode = null;
         node = this.connect(node, info.pitch);
@@ -864,7 +948,9 @@ class TrackSoundPulse extends TrackSoundData
         this.setConnect(info);
         this.setEffects(info, t0, e);
 
-        info.osc.width.setValueAtTime(PULSE_TYPES[e.tone], t0 + WAIT_SEC);
+        if(!e.durty){
+            info.osc.width.setValueAtTime(PULSE_TYPES[e.tone], t0 + WAIT_SEC);
+        }
         info.osc.frequency.setValueAtTime(note, t0 + WAIT_SEC);
         let addTime = this.setSlur(info.osc.frequency, e.slur, t0 + WAIT_SEC, time, e.key);
         time += addTime;
@@ -875,8 +961,12 @@ class TrackSoundPulse extends TrackSoundData
         if(e.volume){
             this.setInstVolume(e, t0 + WAIT_SEC,  t1 + WAIT_SEC, e.volume);
         }
+        if(e.durty){
+            this.setInstDurty(e, t0 + WAIT_SEC,  t1 + WAIT_SEC, e.durty);
+        }
         this.applyFreqTimeLine(info.osc.frequency);
         this.applyVolumeTimeLine(info.gain.gain);
+        this.applyDurtyTimeLine(info.osc.width);
         info.osc.start(t0 + WAIT_SEC);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.osc.stop(t1 + WAIT_SEC);
@@ -1308,6 +1398,102 @@ class TrackSoundSource extends TrackSoundData
         info.bufferSorce.start(t0 + WAIT_SEC, offset);
         info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
         info.bufferSorce.stop(t1 + WAIT_SEC);
+
+        this.setPlayInfoTime(info, t0 + WAIT_SEC, t1 + WAIT_SEC);
+    }
+}
+
+class TrackSoundFM extends TrackSoundData
+{
+    constructor(){
+        super();
+        this.type = "fm";
+    }
+
+    createPlayInfo(){
+        let info = {}
+        info.operators = [];
+        // オペレーターを複数作成
+        for(let i = 0; i < 4; ++i){
+            info.operators.push(new Tone.FMOscillator({type: "sine"}));
+        }
+        // アルゴリズムのタイプ
+        info.algorithm = 0;
+        this.createEffects(info);
+        this.setConnect(info);
+        let _this = this;
+        info.onended = function(){
+            _this.stopPlayInfo(info);
+        };
+        return info;
+    }
+
+    // FM音源のconnect
+    connectFM(node, info){
+        // アルゴリズムの種類によってつなぎ方を変える
+        let operators = info.operators;
+        let nodes = [3,2,1,0];
+        for(let i = 0; i < nodes.length; ++i){
+            let op = operators[i];
+            node = this.connect(node, op);
+        }
+        return node;
+    }
+
+    notPlayMute(){
+        return false; // pulseの場合はmuteでも動かす
+    }
+
+    stopPlayInfo(info){
+        for(let i = 0; i < info.operators.length; ++i) info.operators[i].stop();
+        super.stopPlayInfo(info);
+    }
+
+    calcFreq(noteNumber){
+        return mtof(noteNumber);
+    }
+
+    playNote(e){
+        var time = e.duration /* 音符の長さ */ * (e.quantize /* 音の長さ倍率 */ / 100);
+        var t0 = e.playbackTime;// 再生開始時間
+        var t1 = t0 + time;
+        var volume = (e.velocity / 128); // 倍率
+        var note = mtoco(e.noteNumber + e.key);
+
+        let info = this.getOrCreatePlayInfo(!e.chord, t0 + WAIT_SEC);
+
+        this.setCommands(info, t0, e.commands);
+        if(e.mute){
+            info.isActive = false;
+            return;
+        }
+
+        this.setConnect(info);
+        this.setEffects(info, t0, e);
+
+        for(let i = 0; i < info.operators.length; ++i) info.operators[i].frequency.setValueAtTime(note, t0 + WAIT_SEC);
+        let addTime = 0;;
+        for(let i = 0; i < info.operators.length; ++i){
+            addTime = Math.max(addTime, this.setSlur(info.operators[i].frequency, e.slur, t0 + WAIT_SEC, time, e.key));
+        }
+        time += addTime;
+        t1 = t0 + time + info.env.release;
+        if(e.pitch){
+            this.setInstPitch(e, t0 + WAIT_SEC,  t1 + WAIT_SEC, e.pitch);
+        }
+        if(e.volume){
+            this.setInstVolume(e, t0 + WAIT_SEC,  t1 + WAIT_SEC, e.volume);
+        }
+        if(e.durty){
+            this.setInstDurty(e, t0 + WAIT_SEC,  t1 + WAIT_SEC, e.durty);
+        }
+        for(let i = 0; i < info.operators.length; ++i){
+            this.applyFreqTimeLine(info.operators[i].frequency);
+        }
+        this.applyVolumeTimeLine(info.gain.gain);
+        for(let i = 0; i < info.operators.length; ++i) info.operators[i].start(t0 + WAIT_SEC);
+        info.env.triggerAttackRelease(time, t0 + WAIT_SEC, volume);
+        for(let i = 0; i < info.operators.length; ++i) info.operators[i].stop(t1 + WAIT_SEC);
 
         this.setPlayInfoTime(info, t0 + WAIT_SEC, t1 + WAIT_SEC);
     }
