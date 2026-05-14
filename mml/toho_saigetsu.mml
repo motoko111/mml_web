@@ -1,0 +1,146 @@
+// t:テンポ
+// l:音の長さ4/4=4 
+// o:オクターブ
+// q:ゲートタイム q/100
+// v:音の大きさ v/128
+// k:キー変更 例:k+4 k-4
+// track分けるには;で区切る
+// []:和音
+// /::/N N回繰り返し
+// $ 無限繰り返し最長10分
+// @ 音色
+// @e[attack,decay,sustain,release] エンベロープ
+// @m1 @m0 ミュートON/OFF
+// @w[0～15,n] Waveチャンネルの場合、波形を変更
+
+// scale
+// cde-fgab-
+// Pulse
+t128 l8 o5 q90 v20 @0 @e[0,0.1,0.6,0.01] @m0
+//@c[c,64,-3,0,4]
+//@c[v,20,0.1,0.1]
+/:rr:/22r64rrrr
+cdd+^^gfd+dfc^^
+dd+^^cf^^
+d+fd+fgg^^f16g16g^^
+c16d16d+^^
+gfd+fga+^^>c<d+^^cd^^
+cdd+fdd^^d16d+16c^
+
+cdd+^^gfd+dfc^^
+dd+^^cf^^
+d+fd+fgg^^f16g16g^^
+c16d16d+^^
+gfd+fga+^^>c<d+^^cd^^
+cdd+fdd^^d16d+16
+// c^
+<
+g+a+>cd+
+f^d+fg^d+c<a+g>d+fc^
+cd+f^d+fg^a+>cd+dc<a+>c^
+<a+gf^gd+f^d+fg^fd+c^c<a+>
+c^c<a+>fg<a+^>c^^^<
+
+g+a+>cd+
+f^d+fg^d+c<a+g>d+fc^
+cd+f^d+fg^a+>cd+dc<a+>c^
+<a+gf^gd+f^d+fg^fd+c^c<a+>
+c^c<a+>fga+^>c^^<c<a+>cd+f
+a+>c<gfg^d+fdd+d<a+>c^<
+ga+>cd+fd+f.d+16f16g16ff.d+16fa+g^
+ga+>c^<a+>c<g^gd+fgfd+c^
+c<a+>c^d+fgfa+^>c^^^^
+
+cd+c<a+>c16<gf+fed+16d
+c<a+16>c16d+16ff+16<a+16
+>c16d+16ff+16
+f16e16d+16<a+16>cd+16cd+ff+g16a+g>c<a+16g16.r32a+>c.
+ccc c<a+16g16f+16f16d+16d16c+16d16d+16f16
+f+16g16a+16g16a+32>c16<a+16>c16r16d+16r16c16r32r32
+<a+16g16d+16f16g16<a+
+>c16d+16f16g16g16f16d+16 a+16g16f16d16d+16f16f+16g16a+16 >c^^
+
+;
+// Pluse
+t128 l8 o4 q90 v20 @1 @e[0,0.1,0.6,0.01] @m0
+/:rr:/22r64rrrr
+cdd+^^gfd+dfc^^
+dd+^^cf^^
+d+fd+fgg^^f16g16g^^
+c16d16d+^^
+gfd+fga+^^>c<d+^^cd^^
+cdd+fdd^^d16d+16c^
+
+cdd+^^gfd+dfc^^
+dd+^^cf^^
+d+fd+fgg^^f16g16g^^
+c16d16d+^^
+gfd+fga+^^>c<d+^^cd^^
+cdd+fdd^^d16d+16
+// c^
+<
+g+a+>cd+
+f^d+fg^d+c<a+g>d+fc^
+cd+f^d+fg^a+>cd+dc<a+>c^
+<a+gf^gd+f^d+fg^fd+c^c<a+>
+c^c<a+>fg<a+^>c^^^<
+
+g+a+>cd+
+f^d+fg^d+c<a+g>d+fc^
+cd+f^d+fg^a+>cd+dc<a+>c^
+<a+gf^gd+f^d+fg^fd+c^c<a+>
+c^c<a+>fga+^>c^^<c<a+>cd+f
+a+>c<gfg^d+fdd+d<a+>c^<
+ga+>cd+fd+f.d+16f16g16ff.d+16fa+g^
+ga+>c^<a+>c<g^gd+fgfd+c^
+c<a+>c^d+fgfa+^>c^^^^
+
+cd+c<a+>c16<gf+fed+16d
+c<a+16>c16d+16ff+16<a+16
+>c16d+16ff+16
+f16e16d+16<a+16>cd+16cd+ff+g16a+g>c<a+16g16.r32a+>c.
+ccc c<a+16g16f+16f16d+16d16c+16d16d+16f16
+f+16g16a+16g16a+32>c16<a+16>c16r16d+16r16c16r32r32
+<a+16g16d+16f16g16<a+
+>c16d+16f16g16g16f16d+16 a+16g16f16d16d+16f16f+16g16a+16 >c^^
+;
+// Wave
+t128 l8 o4 q90 v50 @0 @e[0,0.1,0.6,0.2] @m0 @w[3,2,3,4,5,6,7,8,9,10,11,12,13,14,13] @c[v,10,0.2]
+
+;
+// Noise
+t128 l8 o4 q90 v20 @1 @e[0,0.1,1.0,0.1] @m0
+r^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^r16r16r64rrrr
+c=@0 v10 o5 q90 @e[0.01,0.1,0.4,0] a
+s=@1 v10 o5 q90 @e[0.01,0.3,0.1,0] a
+e=@1 v10 o6 q50 @e[0.01,0.2,0.6,0.8] a
+d=@1 v10 o6 q90 @e[0.01,0.1,0.01,0.1] a
+Z=${c}${d}${e}${s}
+//Z
+//A=l16${d}r${d}${d}${d}rrr
+A=l16${s}rr${s}rr${s}r${d}${d}${d}${d}${d}rrr
+B=l16${d}rrrrrrr
+C=l16${s}rr${s}rr${s}r${d}${d}${d}${d}${e}rrr
+D=l16${s}rr${s}rr${s}r${d}${d}${e}r${e}rrr
+E=l16${d}r${d}${d}${d}rrr ${d}r${d}${d}${d}rrr
+F=l16${d}r${d}r${d}r${d}r ${d}r${d}r${d}r${d}r
+//ddc^
+rr
+AAACAAAD
+AAACAAAD
+EEEEEEEE
+FFFFFFFF
+AAACAAAD
+/:C:/16
+
+;
+// Sample
+t128 l1 o4 q90 v100 @0 @e[0,0,1.0,0.01] @m0
+//@c[fl,440,0]
+//@c[fh,880,0]
+//@c[fm,1]
+l8rrrr64r64r64r64r64r64
+l1
+@100a^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+;

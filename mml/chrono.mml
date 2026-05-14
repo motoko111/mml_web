@@ -1,0 +1,150 @@
+// t:テンポ
+// l:音の長さ4/4=4 
+// o:オクターブ
+// q:ゲートタイム q/100
+// v:音の大きさ v/128
+// k:キー変更 例:k+4 k-4
+// cdefgab:ドレミファソラシド 後ろに数値をつけると長さが変わる +で# -で♭  例:a a4 a8 a16 a+4
+// r:休符
+// ^:タイ 音を伸ばす
+// &:スラー 音をつなげる
+// track分けるには;で区切る
+// []:和音
+// /::/N N回繰り返し
+// @ 音色
+// @e[attack,decay,sustain,release] エンベロープ
+// @m1 @m0 ミュートON/OFF
+// @w[0～15,n] Waveチャンネルの場合、波形を変更
+// @c[コマンド名,引数1,引数2,,,,] コマンド実行 例:c[v,10,0.2] ビブラート
+// = 変数に代入 例: C=[ceg] 以降Cを入力すると[ceg]に置き換わる 宣言したトラック内のみ有効
+// ${name}  変数内で変数を呼び出す 例: C=l64cef B=v50${C}v25${C}v12${C}v6{C}
+// Ctri+L 1行再生
+// Alt+L 全再生
+// Ctrl+S セーブ(ローカルストレージに保存)
+// //でコメントアウト
+
+//scale c+def+g+ab
+// Pulse
+// デューティ比
+// @0 50% @1 25% @2 12.5% @3 75%
+@[pulse]
+t111 l8 o4 q90 v50 @0 @e[0,0.1,0.6,0.2] @m0 @c[v,4,0.1]
+rrrrr^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+@3
+v20r>>l32ec+<bag+f+^^^^r16r16l8<v50
+rrrrrrrr^^^^^^^^^^^^^^^^^^^r16
+/:
+@3 l8
+eg+.g+.f+f+^^^rrr
+f+16g+16a.b.a16g+16f+.f+.ee^^^^rrrrrr
+eg+.g+.f+f+^^^rrr
+f+16g+16a.b.ab.>c+.c+^^^^rrr
+c+e.c+.<a^^^^rrrrrrr
+af+^>c+^<b.>c+.<g+^^f+e^^^^rrr
+ef+c+def+g+^a g+c+def+g+^ag+^^^^rrf+f+^^^^^r
+
+@3
+v20r>>l32ec+<bag+f+^^^^r16r16l8v50
+l8
+rrrrr16
+@0
+c+^^^e^^^g+^^^^^^ra^^^g+^e^c+^^^^^^^^^rr
+<b^>e^<b^^^a^^^g+^^^f+^ef+^^^^^rr
+r>c+^^^e^^^g+^^^^^^^a^^^g+^e^c+^^^^^^^^^^re^^^f+^^^^^^^^^^^rrr<
+/:rrrr:/8
+//rf+g+ab>f+<ec+e>e<c+<a>c+>f+<ec+e
+//f+g+ab>f+<ec+e>e<c+<a>c+>f+<ec+<
+:/2
+;
+// Pulse
+@[pulse]
+t111 l8 o5 q80 v20 @0 @e[0,0.2,0.5,0.1] @m0
+rrrrrrrr
+// 通常
+A=l16f+r g+r ar b>r f+r <er c+r er >er <c+r <ar >c+r >f+r <er c+r er
+// 高い
+B=l16f+r g+r ar b>r f+r <er c+r er >g+r <c+r <ar >c+r >f+r <er c+r er
+// 低い
+C=l16f+r g+r ar b>r f+r <er c+r er >d+r <c+r <ar >c+r >er <er c+r er
+rAA
+AAACABACAB AAAAAAAB
+AAACABACAB AAAAAAAB
+
+;
+// Pulse
+@[pulse]
+t111 l8 o5 q80 v10 @0 @e[0,0.2,0.5,0.1] @m0
+rrrrrrrr
+// 通常
+A=l16f+r g+r ar b>r f+r <er c+r er >er <c+r <ar >c+r >f+r <er c+r er
+// 高い
+B=l16f+r g+r ar b>r f+r <er c+r er >g+r <c+r <ar >c+r >f+r <er c+r er
+// 低い
+C=l16f+r g+r ar b>r f+r <er c+r er >d+r <c+r <ar >c+r >er <er c+r er
+rrr16AA
+AAACABACAB AAAAAAAB
+AAACABACAB AAAAAAAB
+
+;
+// Wave
+// @wで波形変更
+@[wave]
+t111 l8 o4 q100 v90 @0 @e[0,0.02,0.8,0.1] @m0 @w[4,6,8,10,12,12,14,15,14,12,12,10,8,6,4]
+@0=v40 @e[1.0,1.0,0.4,0.01] @w[15,14,8,8,4,4] o4 @c[v,4,0.1]
+@1=v40 @e[0.0,2.0,0.01,0.01] @w[1,15] o3 @c[v,0,0]
+/:r:/48
+@0
+@e[1.5,2.0,0.4,0.01]
+rrf+^^^^^^
+@e[1.5,2.0,0.4,0.01]
+e^^^^^^^
+@e[1.0,1.5,0.4,0.01]
+c+^^^^^r
+
+/:
+@1
+rrf+r rrf+r rrf+r rrf+r
+rrer rrer rrc+r rrer 
+rrf+r rrf+r rrf+r rrf+r
+rrg+r rrg+r rrar rrg+r
+rrf+r rrf+r rrf+r rrf+r
+rrer rrer rrer rrer 
+rrf+r rrf+r rrer rrer
+rrf+r rrf+r rrf+r rrf+r
+
+/:r:/136
+@0
+@e[1.5,2.0,0.4,0.01]
+rrf+^^^^^^
+@e[1.5,2.0,0.4,0.01]
+e^^^^^^^
+@e[1.0,1.5,0.4,0.01]
+c+^^^^^r
+:/2
+
+;
+// Noise
+// @0 短周期ノイズ
+// @1 長周期ノイズ
+@[noise]
+t111 l8 o4 q90 v50 @1 @e[0,0.2,1.0,0.01] @m0
+c=@0 v30 o3 q90 @e[0.01,0.1,0.4,0] a
+s=@1 v30 o5 q90 @e[0.01,0.3,0.1,0] a
+e=@1 v30 o6 q50 @e[0.01,0.2,0.6,0.8] a
+d=@1 v30 o6 q90 @e[0.01,0.5,0.1,0] a
+A=l16${s}rrr
+B=l8r${s}rrr${d}${c}r
+C=l8r${s}rrrl16${d}r${s}${s}rr
+rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+/:
+BCBC BCBC BCBC BCBC BCBC BCBC BCBC BCBC BCBC BCBC
+:/2
+;
+// Sample
+// @0～ 登録された音声再生 000_xxxx.wavの形式でファイルを読み込む 基準a4
+@[sample] 
+t111 l1 o4 q90 v180 @101 @e[0,0,1.0,0.2] @m0
+r8r8r16r16r16a^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;
+
+

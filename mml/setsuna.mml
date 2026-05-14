@@ -1,0 +1,212 @@
+
+// Sample
+// @0～ 登録された音声再生 000_xxxx.wavの形式でファイルを読み込む 基準a4
+@[sample]
+t307 l1 o4 q100 v200 @0 @e[0,0,1.0,0.2] @m0
+//v480@c[f,c3,10,c4,0]
+@103 a^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^&a4.
+;
+
+// bass
+@[wave]
+@w[8,9,15,15,15,15,12,7,4,4,4,4,12,15,15,15]  v20
+//@[sample] v600
+//@5
+
+t307 l4 o2 q80 @5 @e[0,0.4,1.0,0.2] @m0
+/:r:/16
+/:
+A=e^^erre^^errerer
+B=c+^^c+rrc+^^c+rrc+rc+r
+C=c+^^c+rre^^err f+rer
+D=f+^c+f+^c+f+^c+f+^c+f+rer
+ABABABABAB
+CD
+F=c+^^^ ^^^^ e^^^ ^^^^ c+^^^  ^^^^
+G=c+^^^ ^^^^ c+^^^ ^^^^ e^^^ ^^^^ c+^^^ ^^^^ ^^^^ e^^^ c+^^^ ^^^^ e^^^ ^^^^ c+^^^ ^^^^ c+^^^ ^^^^ c+^^^ ^^^^ e^^^
+t305
+FG
+rrrrrrrrrrrrrrrrrrrr
+t307
+:/2
+;
+
+// Pulse
+@[pulse]
+t307 l4 o4 q50 v50 @1 @e[0,0.1,0.6,0.2] @m0
+//@[sample]
+//t307 l4 o4 q50 v400 @5 @e[0,0.4,1.0,0.5] @m0
+/:r:/16
+/:
+q50
+//C1=[ef+a]
+//C2=[f+a>c+<]
+//C3=[g+b>d<]
+//C4=[a>c+e<]
+//C5=[b>df+<]
+//C6=[>c+eg+<]
+//C7=[>df+a<]
+C1=[ef+]
+C2=[f+c+]
+C3=[g+bd]
+C4=[ac+e<]
+C5=[b>df+<]
+C6=[c+eg+]
+C7=[>df+a<]
+
+vn=v28
+vs=v14
+vb=v36
+
+CA1=${vn} ${C1}
+CA1s=${vs} ${C1}${vn}
+CA1b=${vb} ${C1}${vn}
+
+CB1=${vn} ${C2}
+CB1s=${vs} ${C2}${vn}
+CB1b=${vb} ${C2}${vn}
+
+CC1=${vn} ${C2}
+CC1s=${vs} ${C2} ${vn}
+CC1b=${vb} ${C2} ${vn}
+CC2=${vn} ${C1}
+CC2s=${vs} ${C1} ${vn}
+CC2b=${vb} ${C1} ${vn}
+CD1=${vn} [f+a]
+CD2=${vn} ${C1}
+CD3=${vn} [f+a>c+]
+
+A=${C1}${C1s}${C1s}${C1}${C1s}${C1s} ${C1}${C1s}${C1s}${C1}${C1s}${C1s}${C1b}${C1s}${C1b}${C1s}
+B=${C2}${C2s}${C2s}${C2}${C2s}${C2s} ${C2}${C2s}${C2s}${C2}${C2s}${C2s}${C2b}${C2s}${C2b}${C2s}
+A=${CA1}${CA1s}${CA1s}${CA1}${CA1s}${CA1s} ${CA1}${CA1s}${CA1s}${CA1}${CA1s}${CA1s}${CA1b}${CA1s}${CA1b}${CA1s}
+B=${CB1}${CB1s}${CB1s}${CB1}${CB1s}${CB1s} ${CB1}${CB1s}${CB1s}${CB1}${CB1s}${CB1s}${CB1b}${CB1s}${CB1b}${CB1s}
+C=${CC1}${CC1s}${CC1s}${CC1}${CC1s}${CC1s} ${CC2}${CC2s}${CC2s}${CC2}${CC2s}${CC2s}${CC2b}${CC2s}${CC2b}${CC2s}
+D=${CD1}r${CD1}r rr ${CD1}r${CD1}r rr ${CD1}r${CD2}r rr ${CD3}r${CD3}r${CD3}r${CD3}^^r
+ABAB
+@c[a,8]
+ABABAB
+C
+l8
+D
+//erer rr erer rr erer rr ererere^^r
+
+//@[pulse]
+//l4 o4 q90 v5 @0 @e[0,0.4,1.0,0.5] @m0
+t305
+l4 q90
+rr
+C1^ ^^ c+^ e^ C1^ ^^ c+^ e^ 
+C1^ ^^ e^ f+^ C1^ ^^ e^ f+^
+C1^ ^^ c+^ e^ C1^ ^^ c+^ e^ 
+C1^ ^^ f+^ a^ b^ a^ f+^ e^
+C1^ ^^ c+^ e^ C1^ ^^ e^ f+^
+C1^ ^^ e^ g+^ c+^ e^ f+^ g+^
+C1^ ^^ e^ f+^ C1^ ^^ f+^ g+^
+@c[a,1,0,0]
+f+
+@c[a,32,0,2.0]
+f+f+f+f+f+f+f+f+f+f+f+f+f+f+r
+@c[a]
+
+t307
+:/2
+;
+// Noise
+// @0 短周期ノイズ
+// @1 長周期ノイズ
+@[noise]
+t307 l4 o4 q90 v50 @1 @e[0,0.1,1.0,0.01] @m0
+ /* hihat close */
+h=@1 v20 o6 q90 @v[15] @p[0] @e[0.01,0.1,0.01,0] a
+ /* hihat close */
+H=@1 v20 o4 q90 @v[15] @p[0] @e[0.01,0.1,0.01,0] a
+ /* hihat open */
+n=@1 v40 o6 q90 @v[15] @p[0] @e[0.01,0.1,0.6,0.4] a
+/* crash (simbal) */
+c=@1 v30 o6 q90 @v[15] @p[0] @e[0.01,0.1,1.0,1.0] a
+/*snare*/
+s=@1 v30 o4 q90 @v[15] @p[0] @e[0.01,0.3,0.1,0.1] a
+/*kick*/
+k=@1 v60 o2 q90 @v[15] @p[0] @e[0.01,0.3,0.1,0] a
+/*clap*/
+C=@1 v30 o4 q90 @p[0] @v[15,15,15,0,0] @e[0.01,0.1,0.01,0] b
+
+/:r:/16
+/:
+l4
+hHhH hHhH hHhH hHhH 
+hHhH hHhH hHhH hHhH 
+hHhH hHhH hHhH hHhH 
+hHhH hHhH hHhH hHhH 
+hHhH hHhH hHhH hHhH 
+hHhH hHhH hHhH hHhH 
+hHhH hHhH hHhH hHhH 
+hHhH hHhH hHhH hHhH 
+hHhH hHhH hHhH hHhH 
+hHhH hHhH hHhH hHhH 
+hHhH hHhH hHhH hHhH 
+hHhH hHhH hHhH hHhH 
+
+t305
+l8
+hrHr hrHr hrHr hr rr  
+CrHr hrHr hrHr hr Hr  
+hrHr hrHr hrHr hr Hr
+CrHr hrHr hrHr hr Hr
+
+hrHr hrHr hrHr hr rr  
+CrHr hrHr hrHr hr Hr  
+hrHr hrHr hrHr hr Hr
+CrHr hrHr hrHr hr Hr
+
+//r /*不要*/
+hrHr hrHr hrHr hr rr  
+CrHr hrHr hrHr hr Hr  
+hrHr hrHr hrHr hr Hr
+CrHr hrHr hrHr hr Hr
+
+hrHr hrHr hrHr hr rr  
+CrHr hrHr hrHr hr Hr  
+hrHr hrHr hrHr hr Hr
+CrHr hrHr hrHr hr Hr
+
+t307
+:/2
+
+;
+// scale c+d?ef+g+ab Eメジャー か Aメジャー
+// Sample
+// @0～ 登録された音声再生 000_xxxx.wavの形式でファイルを読み込む 基準a4
+@[pulse]
+t307 l4 o4 q90 v28 @3 @e[0,0.4,1.0,0.5] @m0
+//@[sample]
+//t307 l4 o4 q90 v400 @5 @e[0,0.4,1.0,0.5] @m0
+@c[v,8,0.1,0.2]
+/:r:/16
+/:
+l4
+/:r:/62
+l8
+f+g+ab>c+^<rrrrb^rrrr>e^rrrrc+^^<
+rrrb^rra^rrb^rr>c+^<b^rra^f+^^^rrrrrrrrrrr
+rf+g+ab>c+^<rrrrb^rrrr>e^rrrrc+^^<
+>rrrf+^rre^rrg+^rra^g+^rre^f+^^^<
+rrrr rrrr rrrr >f+^rr>c+^^rrr<b^rrrrf+^^rrrg+^rr
+rr a^rr b^rr g+^rrarg+^rr er c+^^rr
+rrrrrrrrrrr
+<f+g+ab>c+^<rrrrb^rrrr>e^rrrrc+^^rrr f+^rre^rr 
+g+rg+r rr g+rg+r rr g+rg+r rr g+^
+// g+^^^ ^^ ^^^^ ^^ ^^^^ ^^ ^^
+rrrrrrrr
+
+t305
+e^rr f+^^^^^^^ rrrr e^^^ f+^^^ g+^^^ f+^^^ e^^^ c+^^^ e^^^ f+^^^^^rr
+<rrrr rrrr g+^^^ >c+^^^ <b^^^ ^^^^ ^^^^ a^^^ g+^^^ ^^ag+f+^^^ e^^^ c+^^^ e^^^ f+^^^ ^^^^ ^^^r
+rrrr 
+//r /*不要*/
+c+^^^ e^^^ f+^^^ ^^^^ ^^^^ a^^ ^b^^ ^^r >c+<ba^^^ b^^^ >c+^^^^^^ rrrr rrrr
+rrrr rrrr rc+^^^ e^^^ <b^^^ rrrr >c+^^^ e^^^ <b^^^ >c+^^^ <g+^^^ e^^^ f+^^^ ^^^^ rrrr rrrr rrrrrrrrrrrrrrrr
+t307
+:/2
+;
+
