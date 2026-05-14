@@ -88,6 +88,25 @@ var newFile = async () => {
   });
 };
 
+var loadSampleFile = async (path) => {
+  let result = window.confirm('新規作成\n現在編集中のデータは削除されます。よろしいですか？');
+  if(!result){
+    return;
+  }
+
+  stop();
+  mmlEditor.clear();
+  G_NoteAnalysis.clear();
+  reset();
+  drawUpdate();
+
+  await loadFileAsync(path, (txt) => {
+    mmlEditor.initEditor();
+    mmlEditor.editor.setValue(txt);
+    console.log(txt);
+  });
+};
+
 
 function saveLocalStorage(){
   let content = mmlEditor.editor.getValue();
@@ -770,6 +789,16 @@ function setupToolbar(){
   editor.addChild(new ToobarItem("文字サイズ拡大", () => { addFontSize(1); }, "assets/icon/big.png"));
   editor.addChild(new ToobarItem("文字サイズ縮小", () => { addFontSize(-1); }, "assets/icon/small.png"));
   toolbar.nodes.push(editor);
+
+  let sample = new ToobarItem("サンプル");
+  sample.addChild(new ToobarItem("Chrono Trigger 時の回廊", () => { loadSampleFile('mml/chrono_sample.mml'); }, "assets/icon/new.png"));
+  sample.addChild(new ToobarItem("いけにえと雪のセツナ Rare", () => { loadSampleFile('mml/setsuna_sample.mml'); }, "assets/icon/new.png"));
+  sample.addChild(new ToobarItem("Dewprism 旅立ちの森(途中)", () => { loadSampleFile('mml/dewpri_sample.mml'); }, "assets/icon/new.png"));
+  sample.addChild(new ToobarItem("人工声", () => { loadSampleFile('mml/boin_2.mml'); }, "assets/icon/new.png"));
+  sample.addChild(new ToobarItem("東方 デザイアドライブ(途中)", () => { loadSampleFile('mml/toho_dd_sample.mml'); }, "assets/icon/new.png"));
+  sample.addChild(new ToobarItem("きらきらぼし", () => { loadSampleFile('mml/kirakira_sample.mml'); }, "assets/icon/new.png"));
+  sample.addChild(new ToobarItem("かえるのうた", () => { loadSampleFile('mml/kaeru_sample.mml'); }, "assets/icon/new.png"));
+  toolbar.nodes.push(sample);
 
   toolbar.build();
 }
