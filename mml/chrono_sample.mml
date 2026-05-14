@@ -140,11 +140,5 @@ rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
 BCBC BCBC BCBC BCBC BCBC BCBC BCBC BCBC BCBC BCBC
 :/2
 ;
-// Sample
-// @0～ 登録された音声再生 000_xxxx.wavの形式でファイルを読み込む 基準a4
-@[sample] 
-t111 l1 o4 q90 v180 @101 @e[0,0,1.0,0.2] @m0
-r8r8r16r16r16a^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-;
 
 

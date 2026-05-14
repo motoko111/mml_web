@@ -1,0 +1,252 @@
+// cde-fgab-
+
+@[pulse]
+t123 l8 o4 q90 v20 @0 @e[0,0.1,0.6,0.2] @m0
+/:r:/4
+l16
+>
+v20
+/:fa+g>c<a+>fcgf>c<a+>f
+c<a+gfg<a+>f<aa+fad:/8
+/:
+v20
+/:fa+g>c<a+>fcgf>c<a+>f
+c<a+gfg<a+>f<aa+fad:/4
+v10
+/:fa+g>c<a+>fcgf>c<a+>f
+c<a+gfg<a+>f<aa+fad:/8
+v5
+/:fa+g>c<a+>fcgf>c<a+>f
+c<a+gfg<a+>f<aa+fad:/8
+v1
+/:fa+g>c<a+>fcgf>c<a+>f
+c<a+gfg<a+>f<aa+fad:/8
+:/2
+;
+// Pulse
+// デューティ比
+// @0 50% @1 25% @2 12.5% @3 75%
+//@[sample]
+//t123 l8 o5 q90 v800 @0 @e[0,0.1,0.6,0.2] @m0
+@[wave]
+t123 l8 o4 q90 v50 @0 @e[0,0.1,0.6,0.2] @m0 @w[3,2,3,4,5,6,7,8,9,10,11,12,13,14,13]
+/:r:/100
+/:
+l8
+[a+f]rrrrrrrrrrrrrrrrrrrr>[c<a+>]<rr[a+f]
+
+/:r:/23
+
+l16
+a+agrara+r>c<rfrrrgrdrfrgrrr
+a+agrara+r>c<rfrrrgrdrfrgr>c<r
+a+rrrrrfr rrrr >c<rrr rrfr rrrr >drrrrr d+rrrrr frrrrrd+rrrrr <
+
+a+agrara+r>c<rfrrrgrdrfrgrrr
+a+agrara+r>c<rfrrrgrdrfrgr>c<r
+a+rrrrrfr rrrr >c<rrr rrfr rrrr >drrrrr d+rrrrr frrrrrd+rrrrr <
+
+rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+
+rr>d+r rrrr [c+<a+>]rrrrrcc+d+rc<ra+rrrfrrrf+rrrg+
+
+rrrrrrrrrrrrrrrrrrrrrrr>[c<a+>]<
+rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+rr>d+r rrrr [c+<a+>]rrrrrcc+d+rc<ra+rrrfrrrf+rrrg+
+rrrrrrrrrrrrrrrrrrrrrrr
+
+<
+[f+>c+<]^rr g+^rr a+^rr
+[f+>d+<]^rr a+^rr >c^<rr
+[f>c<]^rr  g+^rr a+^rr
+[f>d+<]^rr g+^rr f^rr
+[d+a+]^rr g+^rr a+^rr
+[c+g+]^rr f+^rr g+^rr
+[cg]^rr a+^rr f^rr
+[fc]^rr >c^<rr f^rr
+[f+c+]^rr g+^rr a+^rr
+[fc]^rr a+^rr >c^<rr
+[fc]^rr g+^rr a+^rr
+[fc]^rr g+^rr f^rr
+[f>c<]^rr g+^rr a+^rr
+[f>d+<]^rr g+^rr a+^rr
+[fa+]^rr g+^rr a+^rr
+[fc>f<]^rr >c^<rr f^rr
+:/2
+;
+// Pulse
+@[pulse]
+t123 l8 o2 q100 v30 @2 @e[0,0.1,0.6,0.2] @m0
+/:r:/52
+grgrrgrgrggr
+grgrrgrgrggr
+>
+crcrrcrcrccr
+crcrrcrcrccr
+<
+/:
+grgrrgrgrggr
+grgrrgrgrggr
+>
+crcrrcrcrccr
+crcrrcrcrccr
+<
+grgrrgrgrggr
+grgrrgrgrggr
+>
+crcrrcrcrccr
+crcrrcrcrccr
+<
+grgrrgrgrggr
+grgrrgrgrggr
+>
+crcrrcrcrccr
+crcrrcrcrccr
+
+<
+a+ra+rra+ra+ra+a+r
+a+ra+rra+ra+ra+a+r
+>
+d+rd+rrd+rd+rd+d+r
+d+rd+rrd+rd+rd+d+r
+<
+a+ra+rra+ra+ra+a+r
+a+ra+rra+ra+ra+a+r
+>
+d+rd+rrd+rd+rd+d+r
+d+rd+rrd+rd+rd+d+r
+
+<
+f+^^^ ^^^^ ^^^^
+f^^^^^
+a+^^^^^
+>d+^^^^^
+c+^^^^^
+c^^^^^
+<f^^^^^
+f+^^^ ^^^^ ^^^^
+f^^^^^
+a+^^^^^
+>c^^^ ^^^^ ^^^^
+<f+^^^ ^^^^ ^^^^
+:/2
+;
+// Pulse
+@[pulse]
+t123 l8 o4 q100 v20 @2 @e[0,0.1,0.6,0.2] @m0
+/:r:/100
+/:
+l8
+/:r:/140
+l32
+rrrr>cc+dd+eff+gg+aa+b>c+^^^^^^^^^^^
+l16
+cc+d+rcr<a+^^^
+f^^^f+^^^
+g+^^^^^>c+^<f+^f^
+a+>cc+d+c<g+
+a+>cc+d+c<g+ v16
+a+>cc+d+c<g+ v15
+a+>cc+d+c<g+ v14
+a+>cc+d+c<g+ v14
+a+>cc+d+c<g+ v16
+a+>cc+d+c<g+ v22
+a+>cc+d+c<g+ v20
+>f+^^^c+d+c+c
+<a+>cc+d+c+^^^^^
+
+cc+d+rcr<a+^^^
+f^^^f+^^^
+g+^^^^^>c+^<f+^f^
+a+>cc+d+c<g+
+a+>cc+d+c<g+ v16
+a+>cc+d+c<g+ v15
+a+>cc+d+c<g+ v14
+a+>cc+d+c<g+ v14
+a+>cc+d+c<g+ v16
+a+>cc+d+c<g+ v22
+a+>cc+d+c<g+ v20
+>f+^^^c+d+c+c
+<a+>cc+d+<<
+rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
+:/2
+;
+@[noise]
+t123 l8 o4 q90 v20 @1 @m0
+h=@1 v10 o6 q90 @e[0.01,0.1,0.01,0] a  /* hihat close */
+H=@1 v30 o6 q90 @e[0.01,0.1,0.01,0] a  /* hihat close */
+n=@1 v30 o6 q90 @e[0.01,0.1,0.6,0.4] a /* hihat open */
+c=@1 v30 o6 q90 @e[0.01,0.1,1.0,1.0] a /* crash (cymbal) */
+s=@1 v30 o4 q90 @e[0.01,0.3,0.1,0.1] a /* snare */
+k=@1 v60 o2 q90 @e[0.01,0.3,0.1,0] a   /* kick */
+/:r:/28
+l16
+k^hhhhhh hrl32hhl16hhhhh hrl32hhl16hhhl32hhl16h 
+k^hhhhhh hrl32hhl16hhhhh hrl32hhl16hhhl32hhl16h 
+k^hhhhhh hrl32hhl16hhhhh hrl32hhl16hhhl32hhl16h 
+k^hhhhhh hrl32hhl16hhhhh hrl32hhl16hhhl32hhl16h 
+k^hhhhhh hrl32hhl16hhhhh hrl32hhl16hhhl32hhl16h 
+k^hhhhhh hrl32hhl16hhhhh hrl32hhl16hhhl32hhl16h 
+/:
+rrrsrrss rrsrrsrr srrsrrsr rrrrsrss
+rrsrrsrr srrsrrsr rrrrrrss 
+rrsrrsrr srrsrrsr rrrrsrss
+rrsrrsrr srrsrrsr 
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+rrrrsrss rrsrrsrr srrsrrsr
+HrhrHrhr HrhrHrhr HrhrHrhr
+HrhrHrhr HrhrHrhr HrhrHrhr
+HrhrHrhr HrhrHrhr HrhrHrhr
+HrhrHrhr HrhrHrhr HrhrHrhr
+HrhrHrhr HrhrHrhr HrhrHrhr
+HrhrHrhr HrhrHrhr HrhrHrhr
+HrhrHrhr HrhrHrhr HrhrHrhr
+HrhrHrhr HrhrHrhr HrhrHrhr
+:/2
+;
+@[noise]
+t123 l8 o4 q90 v20 @1 @m0
+h=@1 v10 o6 q90 @e[0.01,0.1,0.01,0] a  /* hihat close */
+H=@1 v30 o6 q90 @e[0.01,0.1,0.01,0] a  /* hihat close */
+n=@1 v30 o6 q90 @e[0.01,0.1,0.6,0.4] a /* hihat open */
+c=@1 v30 o6 q90 @e[0.01,0.1,1.0,1.0] a /* crash (cymbal) */
+s=@1 v30 o4 q90 @e[0.01,0.3,0.1,0.1] a /* snare */
+k=@1 v60 o2 q90 @e[0.01,0.3,0.1,0] a   /* kick */
+/:r:/28
+l16
+k^hhhhhh hrl32hhl16hhhhh hrl32hhl16hhhl32hhl16h 
+k^hhhhhh hrl32hhl16hhhhh hrl32hhl16hhhl32hhl16h 
+k^hhhhhh hrl32hhl16hhhhh hrl32hhl16hhhl32hhl16h 
+k^hhhhhh hrl32hhl16hhhhh hrl32hhl16hhhl32hhl16h 
+k^hhhhhh hrl32hhl16hhhhh hrl32hhl16hhhl32hhl16h 
+k^hhhhhh hrl32hhl16hhhhh hrl32hhl16hhhl32hhl16h 
+/:
+/:
+k^hhhhhh hrl32hhl16hhhhh hrl32hhl16hhhl32hhl16h
+:/28
+:/2
+;
+@[wave]
+t123 l8 o4 q90 v50 @0 @e[0,0.1,0.6,0.2] @m0 @w[3,2,3,4,5,6,7,8,9,10,11,12,13,14,13]
+
+;
+
+
+
